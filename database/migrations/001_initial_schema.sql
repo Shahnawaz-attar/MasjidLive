@@ -1,0 +1,86 @@
+-- Up
+CREATE TABLE IF NOT EXISTS mosques (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    address TEXT NOT NULL,
+    logo_url TEXT
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    avatar TEXT,
+    password_hash TEXT NOT NULL,
+    mosque_id TEXT REFERENCES mosques(id)
+);
+
+CREATE TABLE IF NOT EXISTS members (
+    id TEXT PRIMARY KEY,
+    mosque_id TEXT NOT NULL REFERENCES mosques(id),
+    name TEXT NOT NULL,
+    role TEXT CHECK(role IN ('Imam', 'Muazzin', 'Committee', 'Volunteer')),
+    photo TEXT,
+    contact TEXT,
+    background TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS prayer_times (
+    id TEXT PRIMARY KEY,
+    mosque_id TEXT NOT NULL REFERENCES mosques(id),
+    name TEXT CHECK(name IN ('Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha')),
+    time TEXT NOT NULL,
+    UNIQUE(mosque_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS announcements (
+    id TEXT PRIMARY KEY,
+    mosque_id TEXT NOT NULL REFERENCES mosques(id),
+    title TEXT NOT NULL,
+    body TEXT NOT NULL,
+    audience TEXT CHECK(audience IN ('All', 'Members only')),
+    date TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS donations (
+    id TEXT PRIMARY KEY,
+    mosque_id TEXT NOT NULL REFERENCES mosques(id),
+    amount DECIMAL(10,2) NOT NULL,
+    donor_name TEXT NOT NULL,
+    purpose TEXT NOT NULL,
+    date TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS community_events (
+    id TEXT PRIMARY KEY,
+    mosque_id TEXT NOT NULL REFERENCES mosques(id),
+    title TEXT NOT NULL,
+    date TEXT NOT NULL,
+    type TEXT CHECK(type IN ('Event', 'Iftari Slot')),
+    capacity INTEGER,
+    booked INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id TEXT PRIMARY KEY,
+    mosque_id TEXT NOT NULL REFERENCES mosques(id),
+    user TEXT NOT NULL,
+    action TEXT NOT NULL,
+    details TEXT NOT NULL,
+    date TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Down
+DROP TABLE IF EXISTS audit_logs;
+DROP TABLE IF EXISTS community_events;
+DROP TABLE IF EXISTS donations;
+DROP TABLE IF EXISTS announcements;
+DROP TABLE IF EXISTS prayer_times;
+DROP TABLE IF EXISTS members;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS mosques;

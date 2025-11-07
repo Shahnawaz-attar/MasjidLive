@@ -1,10 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
+import { useState, useEffect, ChangeEvent, FormEvent, MouseEvent } from 'react';
 import Layout from './components/Layout';
-import { Mosque, Member, PrayerTime, Announcement, Donation, CommunityEvent, AuditLog, User, MosqueSummary, MemberRole } from './types';
-import { db } from './mockDb';
+import { Mosque, Member, PrayerTime, Announcement, Donation, CommunityEvent, AuditLog, User, MosqueSummary, MemberRole, UserWithoutPassword } from './types';
 import { DataTable, Column } from './components/DataTable';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Input, Label, CardFooter, Modal, Textarea } from './components/ui';
-import { PlusIcon, MosqueIcon, ArrowRightIcon, UsersIcon, CalendarIcon, MegaphoneIcon, DollarSignIcon, ClockIcon, EditIcon, TrashIcon, HomeIcon } from './components/icons';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Input, Label, Modal, Textarea, Select } from './components/ui';
+import { PlusIcon, MosqueIcon, ArrowRightIcon, UsersIcon, CalendarIcon, MegaphoneIcon, DollarSignIcon, EditIcon, TrashIcon } from './components/icons';
+import dbService from './database/clientService';
+
+// Event handler types
+type InputChangeEvent = ChangeEvent<HTMLInputElement>;
+type SelectChangeEvent = ChangeEvent<HTMLSelectElement>;
+type TextareaChangeEvent = ChangeEvent<HTMLTextAreaElement>;
+type FormSubmitEvent = FormEvent<HTMLFormElement>;
+type MouseClickEvent = MouseEvent<HTMLButtonElement>;
+
+// Function to handle type-safe form changes
+const handleFormChange = <T extends Record<string, any>>(
+    setter: React.Dispatch<React.SetStateAction<T>>,
+    e: InputChangeEvent | SelectChangeEvent | TextareaChangeEvent
+) => {
+    const { id, value } = e.target;
+    setter(prev => ({ ...prev, [id]: value }));
+};
+
+const handleClick = (e: MouseClickEvent, callback: () => void) => {
+    e.stopPropagation();
+    callback();
+};
+
+// Component props types
+interface MemberFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    mosqueId: string;
+    initialData?: Member | null;
+    onSave: () => void;
+}
+
+interface PrayerTimeFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    mosqueId: string;
+    initialData?: PrayerTime | null;
+    onSave: () => void;
+}
 
 const DashboardPage = ({ mosque }: { mosque: Mosque }) => {
     const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
@@ -23,11 +62,11 @@ const DashboardPage = ({ mosque }: { mosque: Mosque }) => {
         const fetchDashboardData = async () => {
             // Fix: Specify the string literal type for the collection name and cast the result of Promise.all
             const [pt, members, events, announcements, donations] = await Promise.all([
-                db.getCollection<'prayerTimes'>(mosque.id, 'prayerTimes'),
-                db.getCollection<'members'>(mosque.id, 'members'),
-                db.getCollection<'events'>(mosque.id, 'events'),
-                db.getCollection<'announcements'>(mosque.id, 'announcements'),
-                db.getCollection<'donations'>(mosque.id, 'donations'),
+                dbService.getCollection<'prayerTimes'>(mosque.id, 'prayerTimes'),
+                dbService.getCollection<'members'>(mosque.id, 'members'),
+                dbService.getCollection<'events'>(mosque.id, 'events'),
+                dbService.getCollection<'announcements'>(mosque.id, 'announcements'),
+                dbService.getCollection<'donations'>(mosque.id, 'donations'),
             ]) as [PrayerTime[], Member[], CommunityEvent[], Announcement[], Donation[]];
 
             setPrayerTimes(pt);
@@ -183,7 +222,7 @@ const DashboardPage = ({ mosque }: { mosque: Mosque }) => {
     );
 };
 
-const MemberFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave }: { isOpen: boolean, onClose: () => void, mosqueId: string, initialData?: Member | null, onSave: () => void }) => {
+const MemberFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave }: MemberFormModalProps) => {
     const [formData, setFormData] = useState<Omit<Member, 'id' | 'mosqueId'>>({
         name: initialData?.name || '',
         role: initialData?.role || 'Volunteer',
@@ -206,20 +245,19 @@ const MemberFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave }: { i
         }
     }, [initialData]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { id, value } = e.target;
-        setFormData(prev => ({ ...prev, [id]: value }));
+    const handleChange = (e: InputChangeEvent | SelectChangeEvent | TextareaChangeEvent) => {
+        handleFormChange(setFormData, e);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormSubmitEvent) => {
         e.preventDefault();
         if (initialData) {
-            await db.updateDoc('members', { ...initialData, ...formData, mosqueId });
+            await dbService.updateDoc('members', { ...initialData, ...formData, mosqueId });
         } else {
             // Simple photo generation for new members
             const randomSeed = Math.floor(Math.random() * 100); // For different avatars
             const newPhoto = `https://i.pravatar.cc/150?u=${mosqueId}-${formData.name.replace(/\s/g, '')}-${randomSeed}`;
-            await db.addDoc(mosqueId, 'members', { ...formData, photo: newPhoto });
+            await dbService.addDoc(mosqueId, 'members', { ...formData, photo: newPhoto });
         }
         onSave();
         onClose();
@@ -265,7 +303,7 @@ const MembersPage = ({ mosque }: { mosque: Mosque }) => {
 
     const fetchMembers = () => {
         // Fix: Specify the string literal type for the collection name
-        db.getCollection<'members'>(mosque.id, 'members').then(setMembers);
+        dbService.getCollection<'members'>(mosque.id, 'members').then(setMembers);
     };
 
     useEffect(() => {
@@ -284,7 +322,7 @@ const MembersPage = ({ mosque }: { mosque: Mosque }) => {
 
     const handleDeleteMember = async (memberId: string) => {
         if (window.confirm("Are you sure you want to delete this member?")) {
-            await db.deleteDoc('members', memberId);
+            await dbService.deleteDoc('members', memberId);
             fetchMembers();
         }
     };
@@ -297,10 +335,10 @@ const MembersPage = ({ mosque }: { mosque: Mosque }) => {
             header: 'Actions', 
             accessor: item => (
                 <div className="flex space-x-2">
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditMember(item); }}>
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditMember(item))}>
                         <EditIcon className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleDeleteMember(item.id); }}>
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteMember(item.id))}>
                         <TrashIcon className="h-4 w-4 text-red-500" />
                     </Button>
                 </div>
@@ -326,7 +364,7 @@ const MembersPage = ({ mosque }: { mosque: Mosque }) => {
 };
 
 
-const PrayerTimeFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave }: { isOpen: boolean, onClose: () => void, mosqueId: string, initialData?: PrayerTime | null, onSave: () => void }) => {
+const PrayerTimeFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave }: PrayerTimeFormModalProps) => {
     const [formData, setFormData] = useState<Omit<PrayerTime, 'id'>>({
         name: initialData?.name || 'Fajr',
         time: initialData?.time || '00:00 AM',
@@ -340,19 +378,18 @@ const PrayerTimeFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave }:
         }
     }, [initialData]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { id, value } = e.target;
-        setFormData(prev => ({ ...prev, [id]: value }));
+    const handleChange = (e: InputChangeEvent | SelectChangeEvent | TextareaChangeEvent) => {
+        handleFormChange(setFormData, e);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: FormSubmitEvent) => {
         e.preventDefault();
         if (initialData) {
-            await db.updateDoc('prayerTimes', { ...initialData, ...formData });
+            await dbService.updateDoc('prayerTimes', { ...initialData, ...formData });
         } else {
             // This case might not be needed if we only edit existing prayer times, not add new ones.
             // But included for completeness for a typical form.
-            await db.addDoc(mosqueId, 'prayerTimes', formData);
+            await dbService.addDoc(mosqueId, 'prayerTimes', formData);
         }
         onSave();
         onClose();
@@ -390,7 +427,7 @@ const PrayerTimesPage = ({ mosque }: { mosque: Mosque }) => {
 
     const fetchPrayerTimes = () => {
         // Fix: Specify the string literal type for the collection name
-        db.getCollection<'prayerTimes'>(mosque.id, 'prayerTimes').then(setTimes);
+        dbService.getCollection<'prayerTimes'>(mosque.id, 'prayerTimes').then(setTimes);
     };
 
     useEffect(() => {
@@ -408,7 +445,7 @@ const PrayerTimesPage = ({ mosque }: { mosque: Mosque }) => {
         {
             header: 'Actions',
             accessor: item => (
-                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleEditClick(item); }}>
+                <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => { e.stopPropagation(); handleEditClick(item); }}>
                     <EditIcon className="h-4 w-4" />
                 </Button>
             )
@@ -437,7 +474,7 @@ const AnnouncementsPage = ({ mosque }: { mosque: Mosque }) => {
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     useEffect(() => {
         // Fix: Specify the string literal type for the collection name
-        db.getCollection<'announcements'>(mosque.id, 'announcements').then(setAnnouncements);
+        dbService.getCollection<'announcements'>(mosque.id, 'announcements').then(setAnnouncements);
     }, [mosque]);
     const columns: Column<Announcement>[] = [
         { header: 'Title', accessor: item => item.title },
@@ -459,7 +496,7 @@ const DonationsPage = ({ mosque }: { mosque: Mosque }) => {
     const [donations, setDonations] = useState<Donation[]>([]);
     useEffect(() => {
         // Fix: Specify the string literal type for the collection name
-        db.getCollection<'donations'>(mosque.id, 'donations').then(setDonations);
+        dbService.getCollection<'donations'>(mosque.id, 'donations').then(setDonations);
     }, [mosque]);
     const columns: Column<Donation>[] = [
         { header: 'Donor', accessor: item => item.donorName },
@@ -482,7 +519,7 @@ const EventsPage = ({ mosque }: { mosque: Mosque }) => {
     const [events, setEvents] = useState<CommunityEvent[]>([]);
     useEffect(() => {
         // Fix: Specify the string literal type for the collection name
-        db.getCollection<'events'>(mosque.id, 'events').then(setEvents);
+        dbService.getCollection<'events'>(mosque.id, 'events').then(setEvents);
     }, [mosque]);
     const columns: Column<CommunityEvent>[] = [
         { header: 'Title', accessor: item => item.title },
@@ -505,7 +542,7 @@ const AuditLogPage = ({ mosque }: { mosque: Mosque }) => {
     const [logs, setLogs] = useState<AuditLog[]>([]);
     useEffect(() => {
         // Fix: Specify the string literal type for the collection name
-        db.getCollection<'auditLogs'>(mosque.id, 'auditLogs').then(setLogs);
+        dbService.getCollection<'auditLogs'>(mosque.id, 'auditLogs').then(setLogs);
     }, [mosque]);
     const columns: Column<AuditLog>[] = [
         { header: 'User', accessor: item => item.user },
@@ -523,15 +560,18 @@ const AuditLogPage = ({ mosque }: { mosque: Mosque }) => {
     );
 }
 
-const LoginScreen = ({ onLoginSuccess, onBackToLanding }: { onLoginSuccess: (user: User) => void, onBackToLanding: () => void }) => {
+const LoginScreen = ({ onLoginSuccess, onBackToLanding }: { onLoginSuccess: (user: UserWithoutPassword) => void, onBackToLanding: () => void }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleEmailChange = (e: InputChangeEvent) => setEmail(e.target.value);
+    const handlePasswordChange = (e: InputChangeEvent) => setPassword(e.target.value);
+
+    const handleSubmit = async (e: FormSubmitEvent) => {
         e.preventDefault();
         setError('');
-        const user = await db.login(email, password);
+        const user = await dbService.login(email, password);
         if (user) {
             onLoginSuccess(user);
         } else {
@@ -555,11 +595,11 @@ const LoginScreen = ({ onLoginSuccess, onBackToLanding }: { onLoginSuccess: (use
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="email">Email</Label>
-                                <Input id="email" type="email" placeholder="admin@masjid.com" required value={email} onChange={e => setEmail(e.target.value)} />
+                                <Input id="email" type="email" placeholder="admin@masjid.com" required value={email} onChange={handleEmailChange} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="password">Password</Label>
-                                <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="password123"/>
+                                <Input id="password" type="password" required value={password} onChange={handlePasswordChange} placeholder="password123"/>
                             </div>
                             {error && <p className="text-sm text-red-500">{error}</p>}
                             <Button type="submit" className="w-full">Login</Button>
@@ -574,79 +614,151 @@ const LoginScreen = ({ onLoginSuccess, onBackToLanding }: { onLoginSuccess: (use
     );
 };
 
-// New component for individual mosque cards on the landing page
-const MosqueLandingCard = ({ mosque }: { mosque: Mosque }) => {
-    const [summary, setSummary] = useState<MosqueSummary | null>(null);
+const LandingPage = ({ mosques, onGoToLogin }: { mosques: Mosque[], onGoToLogin: () => void }) => {
+    const [selectedId, setSelectedId] = React.useState<string | null>(mosques.length ? mosques[0].id : null);
+    const [summary, setSummary] = React.useState<MosqueSummary | null>(null);
+    const [members, setMembers] = React.useState<Member[]>([]);
+    const [events, setEvents] = React.useState<CommunityEvent[]>([]);
+    const [prayerTimes, setPrayerTimes] = React.useState<PrayerTime[]>([]);
 
     useEffect(() => {
-        const fetchSummary = async () => {
-            const data = await db.getMosqueSummary(mosque.id);
-            setSummary(data);
+        if (!selectedId && mosques.length) setSelectedId(mosques[0].id);
+    }, [mosques]);
+
+    useEffect(() => {
+        if (!selectedId) return;
+        const fetch = async () => {
+            const s = await dbService.getMosqueSummary(selectedId);
+            setSummary(s);
+            const members = await dbService.getCollection<'members'>(selectedId, 'members');
+            const events = await dbService.getCollection<'events'>(selectedId, 'events');
+            const pt = await dbService.getCollection<'prayerTimes'>(selectedId, 'prayerTimes');
+            setMembers(members as Member[]);
+            setEvents(events as CommunityEvent[]);
+            setPrayerTimes(pt as PrayerTime[]);
         };
-        fetchSummary();
-    }, [mosque.id]);
+        fetch();
+    }, [selectedId]);
 
-    return (
-        <Card key={mosque.id} className="flex flex-col">
-            <CardHeader className="flex-row items-center space-x-4">
-                <img src={mosque.logoUrl} alt={mosque.name} className="h-16 w-16 rounded-lg"/>
-                <div>
-                    <CardTitle>{mosque.name}</CardTitle>
-                    <CardDescription>{mosque.address}</CardDescription>
-                </div>
-            </CardHeader>
-            <CardContent className="flex-grow grid grid-cols-2 gap-4">
-                {summary ? (
-                    <>
-                        <div className="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <ClockIcon className="h-6 w-6 text-secondary mb-1" />
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Next Prayer</p>
-                            {/* Fix: Removed duplicate 'className' attribute */}
-                            <p className="font-semibold text-lg">{summary.nextPrayer ? summary.nextPrayer.time : 'N/A'}</p>
-                        </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <UsersIcon className="h-6 w-6 text-primary mb-1" />
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Members</p>
-                            <p className="font-semibold text-lg">{summary.memberCount}</p>
-                        </div>
-                        <div className="flex flex-col items-center justify-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg col-span-2">
-                            <CalendarIcon className="h-6 w-6 text-accent mb-1" />
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Upcoming Events</p>
-                            <p className="font-semibold text-lg">{summary.upcomingEventCount}</p>
-                        </div>
-                    </>
-                ) : (
-                    <div className="col-span-2 text-center text-gray-500 dark:text-gray-400">Loading summary...</div>
-                )}
-            </CardContent>
-        </Card>
-    );
-};
-
-const LandingPage = ({ mosques, onGoToLogin }: { mosques: Mosque[], onGoToLogin: () => void }) => {
     return (
         <div className="min-h-screen bg-background dark:bg-dark-background">
-            <header className="p-4 border-b dark:border-gray-800 flex justify-between items-center">
+            <header className="p-4 border-b dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
                 <div className="flex items-center space-x-3">
                     <MosqueIcon className="h-8 w-8 text-primary"/>
                     <h1 className="text-xl font-bold">Masjid Manager</h1>
                 </div>
-                <Button onClick={onGoToLogin}>
-                    Admin Login <ArrowRightIcon className="ml-2 h-4 w-4"/>
-                </Button>
+                <div className="flex items-center space-x-3 w-full md:w-auto">
+                    <Select className="h-10 rounded-md border px-3" value={selectedId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedId(e.target.value)}>
+                        {mosques.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </Select>
+                    <Button onClick={onGoToLogin}>Admin Login <ArrowRightIcon className="ml-2 h-4 w-4"/></Button>
+                </div>
             </header>
+
             <main className="p-4 sm:p-8">
-                <div className="text-center max-w-3xl mx-auto mb-12">
+                <div className="text-center max-w-3xl mx-auto mb-6">
                     <h2 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">Welcome to Our Community of Mosques</h2>
-                    <p className="mt-6 text-lg leading-8 text-gray-600 dark:text-gray-400">
-                        A central hub for managing our community's spiritual centers. View details for each mosque below or log in to manage your assigned center.
-                    </p>
+                    <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-400">Select a mosque from the dropdown to view public widgets for that mosque.</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {mosques.map(mosque => (
-                        <MosqueLandingCard key={mosque.id} mosque={mosque} />
-                    ))}
-                </div>
+
+                {/* Widgets for selected mosque (visible to non-auth users) */}
+                {selectedId && (
+                    <div className="max-w-5xl mx-auto space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Members</CardTitle>
+                                    <CardDescription>Total active members</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold">{members.length}</div>
+                                    <p className="text-xs text-gray-500">Most recent members shown below</p>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Upcoming Events</CardTitle>
+                                    <CardDescription>Next events</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold">{events.length}</div>
+                                    <p className="text-xs text-gray-500">Next: {events[0]?.title ?? '—'}</p>
+                                </CardContent>
+                            </Card>
+
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Next Prayer</CardTitle>
+                                    <CardDescription>Upcoming prayer time</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-3xl font-bold">{summary?.nextPrayer?.time ?? 'N/A'}</div>
+                                    <p className="text-xs text-gray-500">{summary?.nextPrayer?.name ?? ''}</p>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="lg:col-span-2">
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Upcoming Events</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {events.length ? events.slice(0,5).map(ev => (
+                                            <div key={ev.id} className="p-2 border-b last:border-b-0">
+                                                <div className="font-semibold">{ev.title}</div>
+                                                <div className="text-xs text-gray-500">{ev.date} • {ev.type}</div>
+                                            </div>
+                                        )) : <p className="text-sm text-gray-500">No upcoming events.</p>}
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="mt-6">
+                                    <CardHeader>
+                                        <CardTitle>Recent Members</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {members.length ? members.slice(0,6).map(mb => (
+                                            <div key={mb.id} className="p-2 border-b last:border-b-0 flex items-center space-x-3">
+                                                <img src={mb.photo} className="h-10 w-10 rounded-full" alt={mb.name} />
+                                                <div>
+                                                    <div className="font-semibold">{mb.name}</div>
+                                                    <div className="text-xs text-gray-500">{mb.role}</div>
+                                                </div>
+                                            </div>
+                                        )) : <p className="text-sm text-gray-500">No members found.</p>}
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div>
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Prayer Times</CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        {prayerTimes.length ? (
+                                            <ul className="space-y-2">
+                                                {prayerTimes.map(pt => (
+                                                    <li key={pt.id} className="flex justify-between">
+                                                        <span>{pt.name}</span>
+                                                        <span className="font-semibold">{pt.time}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm text-gray-500">No prayer times set.</p>
+                                        )}
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* removed legacy simple gallery cards to show widgets only for landing page */}
             </main>
         </div>
     );
@@ -654,14 +766,44 @@ const LandingPage = ({ mosques, onGoToLogin }: { mosques: Mosque[], onGoToLogin:
 
 
 function App() {
-  const [user, setUser] = useState<User | null>(null);
+    // Client app should not run server-side DB initialization (better-sqlite3 / fs).
+    // database initialization happens server-side or via scripts.
+    useEffect(() => {}, []);
+
+  const [user, setUser] = useState<User | null>(() => {
+    try {
+      const raw = localStorage.getItem('masjid_user');
+      return raw ? JSON.parse(raw) as User : null;
+    } catch {
+      return null;
+    }
+  });
+  // Validate persisted user session on mount and whenever user changes
+  useEffect(() => {
+    let mounted = true;
+    const validate = async () => {
+      if (!user) return;
+      try {
+        const remote = await dbService.getUserById(user.id);
+        if (!remote && mounted) {
+          // user no longer valid on server, force logout
+          handleLogout();
+        }
+      } catch (err) {
+        // on any error, logout to be safe
+        if (mounted) handleLogout();
+      }
+    };
+    validate();
+    return () => { mounted = false; };
+  }, [user]);
   const [view, setView] = useState('landing'); // 'landing' or 'login'
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
   const [currentPage, setCurrentPage] = useState('dashboard');
 
   useEffect(() => {
-    db.getMosques().then(data => {
+    dbService.getMosques().then(data => {
         setMosques(data);
         if (data.length > 0 && !selectedMosque) {
             setSelectedMosque(data[0]);
@@ -669,8 +811,10 @@ function App() {
     });
   }, []);
 
-  const handleLogin = (loggedInUser: User) => {
-    setUser(loggedInUser);
+  const handleLogin = (loggedInUser: UserWithoutPassword) => {
+    const asUser = loggedInUser as User;
+    setUser(asUser);
+    try { localStorage.setItem('masjid_user', JSON.stringify(asUser)); } catch {}
     setCurrentPage('dashboard'); // Default to dashboard after login
   };
 
@@ -678,6 +822,7 @@ function App() {
     setUser(null);
     setView('landing');
     setSelectedMosque(null); // Clear selected mosque on logout
+    try { localStorage.removeItem('masjid_user'); } catch {}
   };
 
   const renderPage = () => {

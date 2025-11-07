@@ -154,5 +154,18 @@ export const db = {
             return;
         }
         throw new Error("Document not found");
+    },
+
+    // Allow client to validate a persisted user session
+    getUserByEmail: async (email: string): Promise<User | null> => {
+        await simulateDelay(50);
+        if (email === MOCK_USER.email) return { ...MOCK_USER };
+        return null;
+    },
+
+    getUserById: async (id: string): Promise<User | null> => {
+        await simulateDelay(50);
+        if (id === MOCK_USER.id) return { ...MOCK_USER };
+        return null;
     }
 };

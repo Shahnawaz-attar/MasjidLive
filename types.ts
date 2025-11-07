@@ -1,8 +1,12 @@
+export type UserWithoutPassword = Omit<User, 'password_hash'>;
+
 export interface User {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
+    id: string;
+    name: string;
+    email: string;
+    avatar?: string;
+    password_hash: string;
+    mosque_id?: string;
 }
 
 export type MemberRole = 'Imam' | 'Muazzin' | 'Committee' | 'Volunteer';
