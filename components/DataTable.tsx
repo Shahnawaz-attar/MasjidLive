@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export interface Column<T> {
@@ -11,9 +10,10 @@ interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
   onRowClick?: (item: T) => void;
+  rowClassName?: (item: T) => string; // New prop for dynamic row styling
 }
 
-export function DataTable<T extends { id: string }>({ columns, data, onRowClick }: DataTableProps<T>) {
+export function DataTable<T extends { id: string }>({ columns, data, onRowClick, rowClassName }: DataTableProps<T>) {
   return (
     <div className="bg-surface dark:bg-dark-surface rounded-2xl shadow-material overflow-hidden border border-transparent dark:border-gray-700">
       <div className="overflow-x-auto">
@@ -35,7 +35,7 @@ export function DataTable<T extends { id: string }>({ columns, data, onRowClick 
             {data.map((item) => (
               <tr 
                 key={item.id}
-                className={`transition-colors duration-150 ${onRowClick ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer' : ''}`}
+                className={`transition-colors duration-150 ${onRowClick ? 'hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer' : ''} ${rowClassName ? rowClassName(item) : ''}`}
                 onClick={() => onRowClick?.(item)}
               >
                 {columns.map((col, colIndex) => (

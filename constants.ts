@@ -8,7 +8,7 @@ export const MOCK_USER: User = {
 };
 
 export const MOCK_MOSQUES: Mosque[] = [
-    { id: 'mosque-1', name: 'Grand Central Mosque', address: '123 Islamic Center Dr, Metro City', logoUrl: 'https://api.dicebear.com/8.x/initials/svg?seed=Grand%20Central%20Mosque' },
+    { id: 'mosque-1', name: 'Grand Central Mosque', address: '123 Islamic Center Dr, Metro City', logoUrl: 'https://e7.pngegg.com/pngimages/724/24/png-clipart-al-masjid-an-nabawi-green-dome-mosque-islamic-green-and-brown-mosque-cdr-building-thumbnail.png' },
     { id: 'mosque-2', name: 'Masjid Al-Noor', address: '456 Community Rd, Suburbia', logoUrl: 'https://api.dicebear.com/8.x/initials/svg?seed=Masjid%20Al-Noor' },
 ];
 
@@ -22,11 +22,11 @@ export const MOCK_MEMBERS: Member[] = [
 
 
 export const MOCK_PRAYER_TIMES: PrayerTime[] = [
-    { name: 'Fajr', time: '05:30 AM' },
-    { name: 'Dhuhr', time: '01:15 PM' },
-    { name: 'Asr', time: '04:45 PM' },
-    { name: 'Maghrib', time: '07:00 PM' },
-    { name: 'Isha', time: '08:30 PM' },
+    { id: 'fajr-1', name: 'Fajr', time: '05:30 AM' },
+    { id: 'dhuhr-1', name: 'Dhuhr', time: '01:15 PM' },
+    { id: 'asr-1', name: 'Asr', time: '04:45 PM' },
+    { id: 'maghrib-1', name: 'Maghrib', time: '07:00 PM' },
+    { id: 'isha-1', name: 'Isha', time: '08:30 PM' },
 ];
 
 export const MOCK_ANNOUNCEMENTS: Announcement[] = [
@@ -42,6 +42,8 @@ export const MOCK_DONATIONS: Donation[] = [
 export const MOCK_EVENTS: CommunityEvent[] = [
     { id: 'evt-1', mosqueId: 'mosque-1', title: 'Friday Night Halaqa', date: '2024-05-24', type: 'Event' },
     { id: 'evt-2', mosqueId: 'mosque-1', title: 'Iftari Slot - May 25', date: '2024-05-25', type: 'Iftari Slot', capacity: 50, booked: 25 },
+    { id: 'evt-3', mosqueId: 'mosque-1', title: 'Youth Group Meeting', date: '2024-06-01', type: 'Event' },
+    { id: 'evt-4', mosqueId: 'mosque-1', title: 'Sisters\' Potluck', date: '2024-06-08', type: 'Event' },
 ];
 
 export const MOCK_AUDIT_LOGS: AuditLog[] = [

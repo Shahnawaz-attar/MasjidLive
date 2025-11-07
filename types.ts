@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -19,6 +18,7 @@ export interface Member {
 }
 
 export interface PrayerTime {
+  id: string; // Added for DataTable
   name: 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
   time: string;
 }
@@ -66,4 +66,10 @@ export interface Mosque {
     name: string;
     address: string;
     logoUrl: string;
+}
+
+export interface MosqueSummary {
+  nextPrayer: { name: string; time: string; id: string } | null; // Added id here too
+  memberCount: number;
+  upcomingEventCount: number;
 }

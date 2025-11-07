@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { Mosque } from '../types';
-import { MOCK_USER, MOCK_MOSQUES } from '../constants';
-import { MosqueIcon, UsersIcon, ClockIcon, MegaphoneIcon, DollarSignIcon, CalendarIcon, FileTextIcon, ChevronDownIcon, LogOutIcon, MenuIcon, XIcon } from './icons';
+import { Mosque, User } from '../types';
+import { MosqueIcon, UsersIcon, ClockIcon, MegaphoneIcon, DollarSignIcon, CalendarIcon, FileTextIcon, ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, HomeIcon } from './icons';
 
 interface LayoutProps {
   children: React.ReactNode;
+  user: User;
+  mosques: Mosque[];
   selectedMosque: Mosque;
   onMosqueChange: (mosque: Mosque) => void;
   onNavigate: (page: string) => void;
   currentPage: string;
+  onLogout: () => void;
 }
 
 const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.FC<any>, label: string, isActive: boolean, onClick: () => void }) => (
@@ -25,11 +27,12 @@ const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.FC<any>
   </button>
 );
 
-const Layout: React.FC<LayoutProps> = ({ children, selectedMosque, onMosqueChange, onNavigate, currentPage }) => {
+const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque, onMosqueChange, onNavigate, currentPage, onLogout }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: HomeIcon },
     { id: 'members', label: 'Members', icon: UsersIcon },
     { id: 'prayer-times', label: 'Prayer Times', icon: ClockIcon },
     { id: 'announcements', label: 'Announcements', icon: MegaphoneIcon },
@@ -46,7 +49,7 @@ const Layout: React.FC<LayoutProps> = ({ children, selectedMosque, onMosqueChang
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700/50">
           <div className="flex items-center space-x-3">
-            <MosqueIcon className="h-8 w-8 text-primary"/>
+            <img src="https://e7.pngegg.com/pngimages/724/24/png-clipart-al-masjid-an-nabawi-green-dome-mosque-islamic-green-and-brown-mosque-cdr-building-thumbnail.png" alt="Masjid Logo" className="h-8 w-8 text-primary"/>
             <h1 className="text-xl font-bold">Masjid Admin</h1>
           </div>
           <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
@@ -69,12 +72,12 @@ const Layout: React.FC<LayoutProps> = ({ children, selectedMosque, onMosqueChang
         </nav>
         <div className="p-4 border-t border-gray-200 dark:border-gray-700/50">
             <div className="flex items-center space-x-3">
-                <img src={MOCK_USER.avatar} alt={MOCK_USER.name} className="h-10 w-10 rounded-full" />
+                <img src={user.avatar} alt={user.name} className="h-10 w-10 rounded-full" />
                 <div>
-                    <p className="font-semibold text-sm">{MOCK_USER.name}</p>
-                    <p className="text-xs text-gray-500">{MOCK_USER.email}</p>
+                    <p className="font-semibold text-sm">{user.name}</p>
+                    <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
-                <button className="ml-auto text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                <button onClick={onLogout} className="ml-auto text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
                     <LogOutIcon className="h-5 w-5" />
                 </button>
             </div>
@@ -117,7 +120,7 @@ const Layout: React.FC<LayoutProps> = ({ children, selectedMosque, onMosqueChang
             </button>
             {dropdownOpen && (
               <div className="absolute mt-2 w-72 bg-surface dark:bg-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 right-0">
-                {MOCK_MOSQUES.map(mosque => (
+                {mosques.map(mosque => (
                   <button
                     key={mosque.id}
                     onClick={() => {
