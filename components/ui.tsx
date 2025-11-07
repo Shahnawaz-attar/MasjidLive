@@ -1,125 +1,153 @@
+import React from 'react';
 
-import React, { ReactNode, useEffect } from 'react';
-import ReactDOM from 'react-dom';
-import { XIcon } from './icons';
-
-// Card
-interface CardProps {
-  children: ReactNode;
-  className?: string;
-  onClick?: () => void;
-}
-export const Card: React.FC<CardProps> = ({ children, className, ...props }) => (
-  <div className={`bg-surface dark:bg-dark-surface rounded-2xl shadow-material p-6 transition-all duration-200 ease-out ${className || ''}`} {...props}>
-    {children}
-  </div>
-);
-
-// Button
-// FIX: Added size prop to ButtonProps to allow for different button sizes.
+// A simple Button component
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
-  className?: string;
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  size?: 'default' | 'sm' | 'lg' | 'icon';
 }
-// FIX: Updated Button component to handle the new 'size' prop.
-export const Button: React.FC<ButtonProps> = ({ children, variant = 'primary', size = 'md', className, ...props }) => {
-  const baseClasses = "inline-flex items-center justify-center border border-transparent font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-dark-background transition-colors duration-200";
-  const sizeClasses = {
-    sm: "px-2 py-1 text-sm",
-    md: "px-4 py-2 text-sm",
-    lg: "px-6 py-3 text-base",
-  };
-  const variantClasses = {
-    primary: "bg-primary text-white hover:bg-primary-hover focus:ring-primary",
-    secondary: "bg-secondary text-white hover:bg-blue-700 focus:ring-secondary",
-    ghost: "bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:ring-secondary",
-    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
-  };
-  return (
-    <button className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className || ''}`} {...props}>
-      {children}
-    </button>
-  );
-};
 
-// Badge
-interface BadgeProps {
-  children: ReactNode;
-  color?: string;
-  className?: string;
-}
-export const Badge: React.FC<BadgeProps> = ({ children, color = 'bg-gray-100 text-gray-800', className }) => (
-  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${color} dark:bg-gray-700 dark:text-gray-300 ${className || ''}`}>
-    {children}
-  </span>
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = 'default', size = 'default', ...props }, ref) => {
+    const baseClasses = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none";
+    
+    const variantClasses = {
+      default: "bg-primary text-gray-50 hover:bg-primary/90",
+      destructive: "bg-red-600 text-gray-50 hover:bg-red-600/90",
+      outline: "border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800",
+      secondary: "bg-gray-200 text-gray-900 hover:bg-gray-200/80 dark:bg-gray-700 dark:text-gray-50 dark:hover:bg-gray-700/80",
+      ghost: "hover:bg-gray-100 dark:hover:bg-gray-800",
+      link: "underline-offset-4 hover:underline text-primary",
+    };
+
+    const sizeClasses = {
+      default: "h-10 py-2 px-4",
+      sm: "h-9 px-3 rounded-md",
+      lg: "h-11 px-8 rounded-md",
+      icon: "h-10 w-10",
+    };
+
+    const classes = [
+      baseClasses,
+      variantClasses[variant || 'default'],
+      sizeClasses[size || 'default'],
+      className
+    ].filter(Boolean).join(' ');
+
+    return (
+      <button
+        className={classes}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
 );
+Button.displayName = 'Button';
 
-// Input
-export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(({ className, ...props }, ref) => (
-  <input
-    className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:focus:ring-offset-dark-background ${className || ''}`}
-    ref={ref}
-    {...props}
-  />
-));
-
-// Label
-export const Label = React.forwardRef<HTMLLabelElement, React.LabelHTMLAttributes<HTMLLabelElement>>(({ className, ...props }, ref) => (
-    <label
-        ref={ref}
-        className={`block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 ${className || ''}`}
-        {...props}
+const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={`rounded-2xl bg-surface dark:bg-dark-surface shadow-material border border-transparent dark:border-gray-700 ${className}`}
+      {...props}
     />
-));
+  )
+);
+Card.displayName = 'Card';
 
-// Textarea
-export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(({ className, ...props }, ref) => (
-    <textarea
-        ref={ref}
-        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:focus:ring-offset-dark-background ${className || ''}`}
-        {...props}
-    />
-));
+const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={`flex flex-col space-y-1.5 p-6 ${className}`} {...props} />
+  )
+);
+CardHeader.displayName = 'CardHeader';
 
+const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
+  ({ className, ...props }, ref) => (
+    <h3 ref={ref} className={`text-lg font-semibold leading-none tracking-tight ${className}`} {...props} />
+  )
+);
+CardTitle.displayName = 'CardTitle';
 
-// Modal
-interface ModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    title: string;
-    children: ReactNode;
-}
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
-    useEffect(() => {
-        const handleEsc = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') onClose();
-        };
-        window.addEventListener('keydown', handleEsc);
-        return () => window.removeEventListener('keydown', handleEsc);
-    }, [onClose]);
+const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
+  ({ className, ...props }, ref) => (
+    <p ref={ref} className={`text-sm text-gray-500 dark:text-gray-400 ${className}`} {...props} />
+  )
+);
+CardDescription.displayName = 'CardDescription';
 
+const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={`p-6 pt-0 ${className}`} {...props} />
+  )
+);
+CardContent.displayName = 'CardContent';
+
+const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={`flex items-center p-6 pt-0 ${className}`} {...props} />
+  )
+);
+CardFooter.displayName = 'CardFooter';
+
+const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
+    ({ className, ...props }, ref) => {
+        return (
+            <input
+                className={`flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-gray-500 dark:placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+                ref={ref}
+                {...props}
+            />
+        );
+    }
+);
+Input.displayName = 'Input';
+
+const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
+    ({ className, ...props }, ref) => {
+        return (
+            <textarea
+                className={`flex min-h-[80px] w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-gray-500 dark:placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+                ref={ref}
+                {...props}
+            />
+        );
+    }
+);
+Textarea.displayName = 'Textarea';
+
+const Label = React.forwardRef<HTMLLabelElement, React.LabelHTMLAttributes<HTMLLabelElement>>(
+  ({ className, ...props }, ref) => (
+      <label
+          ref={ref}
+          className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}
+          {...props}
+      />
+  )
+);
+Label.displayName = 'Label';
+
+const Modal = ({ isOpen, onClose, title, children }: { isOpen: boolean, onClose: () => void, title: string, children: React.ReactNode }) => {
     if (!isOpen) return null;
 
-    return ReactDOM.createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}></div>
-            <div className="relative bg-surface dark:bg-dark-surface rounded-2xl shadow-xl w-full max-w-lg m-4">
-                <div className="flex items-start justify-between p-5 border-b border-gray-200 dark:border-gray-700 rounded-t-2xl">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white" id="modal-title">
-                        {title}
-                    </h3>
-                    <button type="button" className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white" onClick={onClose}>
-                        <XIcon className="w-5 h-5" />
-                        <span className="sr-only">Close modal</span>
-                    </button>
+    return (
+        <div className="fixed inset-0 bg-black/60 z-50 flex justify-center items-center" onClick={onClose}>
+            <div className="bg-surface dark:bg-dark-surface rounded-lg shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{title}</h2>
+                    <Button variant="ghost" size="icon" onClick={onClose}>
+                        <XIcon className="h-4 w-4" />
+                    </Button>
                 </div>
-                <div className="p-6 space-y-6">
-                    {children}
-                </div>
+                {children}
             </div>
-        </div>,
-        document.body
+        </div>
     );
 };
+
+
+export { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Input, Label, Textarea, Modal };
+
+const XIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+);

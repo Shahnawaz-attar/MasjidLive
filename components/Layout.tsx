@@ -5,7 +5,6 @@ import {
 } from './icons';
 import { MOCK_USER } from '../constants';
 import { Mosque } from '../types';
-// FIX: Import Button component to resolve 'Cannot find name' error.
 import { Button } from './ui';
 
 type Page = 'Dashboard' | 'Members' | 'Timings' | 'Announcements' | 'Donations' | 'Events' | 'Audit';
