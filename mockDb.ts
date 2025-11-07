@@ -1,12 +1,11 @@
-
-
 import { User, Mosque, Member, PrayerTime, Announcement, Donation, CommunityEvent, AuditLog, MosqueSummary } from './types';
 import { MOCK_USER, MOCK_MOSQUES, MOCK_MEMBERS, MOCK_PRAYER_TIMES, MOCK_ANNOUNCEMENTS, MOCK_DONATIONS, MOCK_EVENTS, MOCK_AUDIT_LOGS } from './constants';
 
 // Deep copy mock data to avoid modifying the original constants
 let mosques: Mosque[] = JSON.parse(JSON.stringify(MOCK_MOSQUES));
 let members: Member[] = JSON.parse(JSON.stringify(MOCK_MEMBERS));
-let prayerTimes: PrayerTime[] = JSON.parse(JSON.stringify(MOCK_PRAYER_TIMES)).map((pt: Omit<PrayerTime, 'id'>, index: number) => ({ ...pt, id: `pt-${index + 1}` })); // Add IDs
+// Ensure prayerTimes also gets an ID on initialization as required by DataTable
+let prayerTimes: PrayerTime[] = JSON.parse(JSON.stringify(MOCK_PRAYER_TIMES)).map((pt: PrayerTime, index: number) => ({ ...pt, id: pt.id || `pt-${index + 1}` }));
 let announcements: Announcement[] = JSON.parse(JSON.stringify(MOCK_ANNOUNCEMENTS));
 let donations: Donation[] = JSON.parse(JSON.stringify(MOCK_DONATIONS));
 let events: CommunityEvent[] = JSON.parse(JSON.stringify(MOCK_EVENTS));
@@ -25,7 +24,7 @@ interface CollectionTypeMap {
 // Explicitly type dataStores to leverage CollectionTypeMap
 const dataStores: { [K in keyof CollectionTypeMap]: CollectionTypeMap[K][] } = {
     members,
-    prayerTimes,
+    prayerTimes, // prayerTimes should now have IDs
     announcements,
     donations,
     events,
@@ -47,7 +46,6 @@ const timeToMinutes = (time: string) => {
 export const db = {
     login: async (email: string, password: string): Promise<User | null> => {
         await simulateDelay(300);
-        // NOTE: In a real app, password would be hashed. This is for demo purposes.
         if (email === MOCK_USER.email && password === 'password123') {
             return { ...MOCK_USER };
         }
@@ -71,14 +69,12 @@ export const db = {
     },
 
     getMosqueSummary: async (mosqueId: string): Promise<MosqueSummary> => {
-        await simulateDelay(100); // Simulate network delay
+        await simulateDelay(100);
 
-        // Fix: Explicitly specify the generic type parameter as string literal of collection names
         const allPrayerTimes = await db.getCollection<'prayerTimes'>(mosqueId, 'prayerTimes'); 
         const membersForMosque = await db.getCollection<'members'>(mosqueId, 'members');
         const eventsForMosque = await db.getCollection<'events'>(mosqueId, 'events');
 
-        // Calculate next prayer
         let nextPrayer: { name: string; time: string; id: string } | null = null;
         if (allPrayerTimes.length > 0) {
             const now = new Date();
@@ -87,8 +83,7 @@ export const db = {
             nextPrayer = sortedTimes.find(p => timeToMinutes(p.time) > currentTime) || sortedTimes[0];
         }
 
-        // Calculate upcoming events (simple count for now, could be filtered by date)
-        const upcomingEventCount = eventsForMosque.filter(e => new Date(e.date) >= new Date()).length; // Filter for future events
+        const upcomingEventCount = eventsForMosque.filter(e => new Date(e.date) >= new Date()).length;
 
         return {
             nextPrayer: nextPrayer ? { name: nextPrayer.name, time: nextPrayer.time, id: nextPrayer.id } : null,
@@ -97,61 +92,59 @@ export const db = {
         };
     },
 
-    // Fix: Use CollectionTypeMap for generic type K, and narrow return type based on K
     getCollection: async <K extends keyof CollectionTypeMap>(mosqueId: string, collectionName: K): Promise<Array<CollectionTypeMap[K]>> => {
         await simulateDelay(50);
         
+        // Ensure dataStores[collectionName] is an array, or handle unexpected collectionName
+        const store = dataStores[collectionName];
+        if (!Array.isArray(store)) {
+            console.error(`Collection '${collectionName}' is not an array or does not exist in dataStores.`);
+            return []; // Return an empty array to prevent filter error
+        }
+
         if (collectionName === 'prayerTimes') {
-            // Prayer times are not mosque-specific in this mock.
-            return [...dataStores.prayerTimes] as Array<CollectionTypeMap[K]>;
+            return [...store] as Array<CollectionTypeMap[K]>;
         }
         
-        const store = dataStores[collectionName];
         // For other collections, filter by mosqueId.
-        // Assert item to have mosqueId since prayerTimes is handled above.
         return (store.filter(item => (item as { mosqueId: string }).mosqueId === mosqueId)) as Array<CollectionTypeMap[K]>;
     },
 
-    // Fix: Use CollectionTypeMap for generic type K and data parameter
     addDoc: async <K extends keyof CollectionTypeMap>(mosqueId: string, collectionName: K, data: Omit<CollectionTypeMap[K], 'id' | 'mosqueId'>): Promise<CollectionTypeMap[K]> => {
         await simulateDelay(100);
         
-        // Generate a simple ID
         const newId = `${collectionName.slice(0, 3)}-${Date.now()}`;
 
         if (collectionName === 'prayerTimes') {
-            // Handle PrayerTime specifically as it doesn't have mosqueId
             const newPrayerTime: PrayerTime = { id: newId, ...(data as Omit<PrayerTime, 'id'>) };
             (dataStores['prayerTimes'] as PrayerTime[]).push(newPrayerTime);
             return newPrayerTime as CollectionTypeMap[K];
         }
 
-        // For other collections, construct the document with mosqueId
         const newDoc = {
             id: newId,
             mosqueId,
             ...data
-        } as CollectionTypeMap[K]; // Fix: Cast to the specific document type
+        } as CollectionTypeMap[K];
 
         (dataStores[collectionName] as Array<CollectionTypeMap[K]>).push(newDoc);
         return newDoc;
     },
 
-    // Fix: Use CollectionTypeMap for generic type K and data parameter
     updateDoc: async <K extends keyof CollectionTypeMap>(collectionName: K, data: CollectionTypeMap[K]): Promise<CollectionTypeMap[K]> => {
         await simulateDelay(100);
         
-        // Fix: Correctly type `store` using CollectionTypeMap
         const store = (dataStores[collectionName] as Array<CollectionTypeMap[K]>);
         const docIndex = store.findIndex(doc => doc.id === data.id);
         if (docIndex > -1) {
-            store[docIndex] = { ...store[docIndex], ...data };
-            return store[docIndex];
+            // Merge properties, but ensure 'id' and 'mosqueId' (if present) are preserved from original
+            const updatedDoc = { ...store[docIndex], ...data };
+            store[docIndex] = updatedDoc;
+            return updatedDoc;
         }
         throw new Error("Document not found");
     },
     
-    // Fix: Use CollectionTypeMap for generic type K
     deleteDoc: async <K extends keyof CollectionTypeMap>(collectionName: K, docId: string): Promise<void> => {
         await simulateDelay(100);
         const store = dataStores[collectionName] as Array<CollectionTypeMap[K]>;
