@@ -1,165 +1,146 @@
-
-import React, { useState, ReactNode, useEffect } from 'react';
-import {
-  DashboardIcon, UsersIcon, ClockIcon, MegaphoneIcon, DollarSignIcon, CalendarIcon, ListIcon, LogOutIcon, SunIcon, MoonIcon, ChevronDownIcon, SearchIcon
-} from './icons';
-import { MOCK_USER } from '../constants';
+import React, { useState } from 'react';
 import { Mosque } from '../types';
-import { Button } from './ui';
-
-type Page = 'Dashboard' | 'Members' | 'Timings' | 'Announcements' | 'Donations' | 'Events' | 'Audit';
-
-interface SidebarProps {
-  currentPage: Page;
-  onPageChange: (page: Page) => void;
-  isCollapsed: boolean;
-  setIsCollapsed: (isCollapsed: boolean) => void;
-  selectedMosque: Mosque | null;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, isCollapsed, setIsCollapsed, selectedMosque }) => {
-  const navItems = [
-    { name: 'Dashboard', icon: DashboardIcon },
-    { name: 'Members', icon: UsersIcon },
-    { name: 'Timings', icon: ClockIcon },
-    { name: 'Announcements', icon: MegaphoneIcon },
-    { name: 'Donations', icon: DollarSignIcon },
-    { name: 'Events', icon: CalendarIcon },
-    { name: 'Audit', icon: ListIcon },
-  ] as const;
-
-  return (
-    <aside className={`flex flex-col bg-surface dark:bg-dark-surface text-gray-800 dark:text-gray-200 shadow-lg transition-all duration-300 ease-in-out ${isCollapsed ? 'w-20' : 'w-64'}`}>
-      <div className={`flex items-center p-4 border-b border-gray-200 dark:border-gray-700 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-        {!isCollapsed && <span className="text-xl font-bold text-primary">Masjid Manager</span>}
-        <button onClick={() => setIsCollapsed(!isCollapsed)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-           {isCollapsed ? '→' : '←'}
-        </button>
-      </div>
-
-      <div className="flex items-center p-4 mt-2">
-         {selectedMosque && (
-            <>
-                <img src={selectedMosque.logoUrl} alt="Mosque Logo" className={`rounded-md transition-all ${isCollapsed ? 'w-10 h-10' : 'w-12 h-12'}`} />
-                {!isCollapsed && (
-                    <div className="ml-3">
-                        <p className="font-semibold text-sm text-gray-800 dark:text-gray-100">{selectedMosque.name}</p>
-                    </div>
-                )}
-            </>
-         )}
-      </div>
-
-      <nav className="flex-1 px-4 py-2 space-y-2">
-        {navItems.map(item => (
-          <a
-            key={item.name}
-            href="#"
-            onClick={(e) => { e.preventDefault(); onPageChange(item.name); }}
-            className={`flex items-center p-3 rounded-lg transition-colors duration-200 ${currentPage === item.name ? 'bg-primary/10 text-primary dark:bg-primary/20' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
-          >
-            <item.icon className={`h-6 w-6 ${currentPage === item.name ? 'text-primary' : ''}`} />
-            {!isCollapsed && <span className="ml-4 font-medium">{item.name}</span>}
-          </a>
-        ))}
-      </nav>
-    </aside>
-  );
-};
-
-interface HeaderProps {
-    theme: 'light' | 'dark';
-    setTheme: (theme: 'light' | 'dark') => void;
-    onLogout: () => void;
-    onSwitchMosque: () => void;
-    selectedMosque: Mosque | null;
-}
-
-const Header: React.FC<HeaderProps> = ({ theme, setTheme, onLogout, onSwitchMosque, selectedMosque }) => {
-    const [menuOpen, setMenuOpen] = useState(false);
-
-    return (
-        <header className="flex items-center justify-between h-16 px-6 bg-surface dark:bg-dark-surface border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-200">{selectedMosque?.name || 'Admin Dashboard'}</h1>
-                 <Button variant="ghost" className="ml-4" onClick={onSwitchMosque}>Switch Mosque</Button>
-            </div>
-
-            <div className="flex items-center space-x-4">
-                <div className="relative">
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-secondary dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                    />
-                </div>
-
-                <div className="relative">
-                    <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center space-x-2">
-                        <img className="h-9 w-9 rounded-full" src={MOCK_USER.avatar} alt="User avatar" />
-                        <span className="hidden md:inline text-sm font-medium text-gray-700 dark:text-gray-300">{MOCK_USER.name}</span>
-                        <ChevronDownIcon className="h-5 w-5 text-gray-500" />
-                    </button>
-
-                    {menuOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-surface dark:bg-dark-surface rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 py-1 z-10">
-                            <div className="px-4 py-2 border-b dark:border-gray-600">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">{MOCK_USER.name}</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{MOCK_USER.email}</p>
-                            </div>
-                            <div className="p-1">
-                                <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="w-full flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                                    {theme === 'light' ? <MoonIcon className="w-5 h-5 mr-3" /> : <SunIcon className="w-5 h-5 mr-3" />}
-                                    Switch to {theme === 'light' ? 'Dark' : 'Light'} Mode
-                                </button>
-                                <button onClick={onLogout} className="w-full flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md">
-                                    <LogOutIcon className="w-5 h-5 mr-3" />
-                                    Logout
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </header>
-    );
-}
+import { MOCK_USER, MOCK_MOSQUES } from '../constants';
+import { MosqueIcon, UsersIcon, ClockIcon, MegaphoneIcon, DollarSignIcon, CalendarIcon, FileTextIcon, ChevronDownIcon, LogOutIcon, MenuIcon, XIcon } from './icons';
 
 interface LayoutProps {
-  children: ReactNode;
-  currentPage: Page;
-  onPageChange: (page: Page) => void;
-  theme: 'light' | 'dark';
-  setTheme: (theme: 'light' | 'dark') => void;
-  selectedMosque: Mosque | null;
-  onLogout: () => void;
-  onSwitchMosque: () => void;
+  children: React.ReactNode;
+  selectedMosque: Mosque;
+  onMosqueChange: (mosque: Mosque) => void;
+  onNavigate: (page: string) => void;
+  currentPage: string;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange, theme, setTheme, selectedMosque, onLogout, onSwitchMosque }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  
-  useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [theme]);
+const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.FC<any>, label: string, isActive: boolean, onClick: () => void }) => (
+  <button
+    onClick={onClick}
+    className={`w-full flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+      isActive
+        ? 'bg-primary/10 text-primary dark:bg-primary/20'
+        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+    }`}
+  >
+    <Icon className="h-5 w-5" />
+    <span>{label}</span>
+  </button>
+);
 
+const Layout: React.FC<LayoutProps> = ({ children, selectedMosque, onMosqueChange, onNavigate, currentPage }) => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  const navItems = [
+    { id: 'members', label: 'Members', icon: UsersIcon },
+    { id: 'prayer-times', label: 'Prayer Times', icon: ClockIcon },
+    { id: 'announcements', label: 'Announcements', icon: MegaphoneIcon },
+    { id: 'donations', label: 'Donations', icon: DollarSignIcon },
+    { id: 'events', label: 'Events', icon: CalendarIcon },
+    { id: 'audit-log', label: 'Audit Log', icon: FileTextIcon },
+  ];
+  
   return (
-    <div className="flex h-screen bg-background dark:bg-dark-background">
-      <Sidebar 
-        currentPage={currentPage} 
-        onPageChange={onPageChange}
-        isCollapsed={isSidebarCollapsed}
-        setIsCollapsed={setIsSidebarCollapsed}
-        selectedMosque={selectedMosque}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header theme={theme} setTheme={setTheme} onLogout={onLogout} onSwitchMosque={onSwitchMosque} selectedMosque={selectedMosque} />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6">
+    <div className="min-h-screen bg-background dark:bg-dark-background">
+      {/* Sidebar */}
+      <aside 
+        className={`fixed inset-y-0 left-0 z-40 w-64 bg-surface dark:bg-dark-surface border-r border-gray-200 dark:border-gray-700/50 flex flex-col transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700/50">
+          <div className="flex items-center space-x-3">
+            <MosqueIcon className="h-8 w-8 text-primary"/>
+            <h1 className="text-xl font-bold">Masjid Admin</h1>
+          </div>
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+            <XIcon className="h-6 w-6" />
+          </button>
+        </div>
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+          {navItems.map(item => (
+            <NavItem 
+              key={item.id}
+              icon={item.icon}
+              label={item.label}
+              isActive={currentPage === item.id}
+              onClick={() => {
+                onNavigate(item.id);
+                setIsSidebarOpen(false); // Close sidebar on mobile nav
+              }}
+            />
+          ))}
+        </nav>
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700/50">
+            <div className="flex items-center space-x-3">
+                <img src={MOCK_USER.avatar} alt={MOCK_USER.name} className="h-10 w-10 rounded-full" />
+                <div>
+                    <p className="font-semibold text-sm">{MOCK_USER.name}</p>
+                    <p className="text-xs text-gray-500">{MOCK_USER.email}</p>
+                </div>
+                <button className="ml-auto text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                    <LogOutIcon className="h-5 w-5" />
+                </button>
+            </div>
+        </div>
+      </aside>
+
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div 
+            className="fixed inset-0 bg-black/60 z-30 lg:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      {/* Main Content */}
+      <div className="lg:pl-64">
+        {/* Header */}
+        <header className="sticky top-0 z-10 bg-surface/80 dark:bg-dark-surface/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between p-4">
+          <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden text-gray-600 dark:text-gray-300 hover:text-primary"
+              aria-label="Open sidebar"
+          >
+              <MenuIcon className="h-6 w-6" />
+          </button>
+          
+          <div className="flex-1 lg:hidden"></div>
+
+          <div className="relative">
+            <button
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+            >
+              <img src={selectedMosque.logoUrl} alt={selectedMosque.name} className="h-8 w-8 rounded-md" />
+              <div>
+                <h2 className="text-lg font-bold">{selectedMosque.name}</h2>
+                <p className="text-xs text-gray-500 hidden sm:block">{selectedMosque.address}</p>
+              </div>
+              <ChevronDownIcon className={`h-5 w-5 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {dropdownOpen && (
+              <div className="absolute mt-2 w-72 bg-surface dark:bg-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 right-0">
+                {MOCK_MOSQUES.map(mosque => (
+                  <button
+                    key={mosque.id}
+                    onClick={() => {
+                      onMosqueChange(mosque);
+                      setDropdownOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center space-x-3"
+                  >
+                    <img src={mosque.logoUrl} alt={mosque.name} className="h-8 w-8 rounded-md" />
+                    <div>
+                        <p className="font-semibold">{mosque.name}</p>
+                        <p className="text-xs text-gray-500">{mosque.address}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+           <div className="flex-1 lg:hidden"></div>
+        </header>
+
+        {/* Page Content */}
+        <main className="p-4 sm:p-6">
           {children}
         </main>
       </div>
