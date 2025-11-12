@@ -10,6 +10,7 @@ export interface User {
 }
 
 export type MemberRole = 'Imam' | 'Muazzin' | 'Committee' | 'Volunteer';
+export type MemberEducation = 'Mufti' | 'Hafiz' | 'Talimuddin' | 'None';
 
 export interface Member {
   id: string;
@@ -19,6 +20,7 @@ export interface Member {
   photo: string;
   contact: string;
   background: string;
+  education?: MemberEducation;
 }
 
 export interface PrayerTime {

@@ -6,16 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "db:migrate": "node --loader ts-node/esm ./database/init.ts",
-    "db:create-migration": "node --loader ts-node/esm ./scripts/create-migration.js",
-    "db:list-migrations": "node --loader ts-node/esm ./scripts/list-migrations.js"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/better-sqlite3": "^7.6.8",
-    "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^8.7.0",
+    "@supabase/supabase-js": "^2.39.0",
     "nanoid": "^5.0.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
