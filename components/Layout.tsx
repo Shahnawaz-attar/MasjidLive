@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Mosque, User } from '../types';
-import { MosqueIcon, UsersIcon, ClockIcon, MegaphoneIcon, DollarSignIcon, CalendarIcon, FileTextIcon, ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, HomeIcon } from './icons';
+import { MosqueIcon, UsersIcon, ClockIcon, MegaphoneIcon, DollarSignIcon, CalendarIcon, FileTextIcon, ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, HomeIcon, PlusIcon } from './icons';
+import { generateAvatarUrl } from '../lib/avatar';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface LayoutProps {
   onNavigate: (page: string) => void;
   currentPage: string;
   onLogout: () => void;
+  onAddMosque?: () => void;
 }
 
 const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.FC<any>, label: string, isActive: boolean, onClick: () => void }) => (
@@ -27,12 +29,13 @@ const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.FC<any>
   </button>
 );
 
-const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque, onMosqueChange, onNavigate, currentPage, onLogout }) => {
+const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque, onMosqueChange, onNavigate, currentPage, onLogout, onAddMosque }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: HomeIcon },
+    { id: 'mosques', label: 'Mosques', icon: MosqueIcon },
     { id: 'members', label: 'Members', icon: UsersIcon },
     { id: 'prayer-times', label: 'Prayer Times', icon: ClockIcon },
     { id: 'announcements', label: 'Announcements', icon: MegaphoneIcon },
@@ -72,7 +75,11 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
         </nav>
         <div className="p-4 border-t border-gray-200 dark:border-gray-700/50">
             <div className="flex items-center space-x-3">
-                <img src={user.avatar} alt={user.name} className="h-10 w-10 rounded-full" />
+                <img 
+                    src={user.avatar || generateAvatarUrl(user.name)} 
+                    alt={user.name} 
+                    className="h-10 w-10 rounded-full object-cover border-2 border-primary/20" 
+                />
                 <div>
                     <p className="font-semibold text-sm">{user.name}</p>
                     <p className="text-xs text-gray-500">{user.email}</p>
@@ -136,6 +143,23 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
                     </div>
                   </button>
                 ))}
+                {onAddMosque && (
+                  <button
+                    onClick={() => {
+                      onAddMosque();
+                      setDropdownOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center space-x-3 border-t border-gray-200 dark:border-gray-700 mt-2 pt-2"
+                  >
+                    <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                      <PlusIcon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                        <p className="font-semibold text-primary">Add New Mosque</p>
+                        <p className="text-xs text-gray-500">Create a new masjid</p>
+                    </div>
+                  </button>
+                )}
               </div>
             )}
           </div>
