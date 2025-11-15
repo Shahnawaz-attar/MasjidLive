@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import pgService from '../database/pgService.js';
+import pgService from '../database/pgService.ts';
 
 dotenv.config();
 
@@ -153,6 +153,30 @@ app.get('/api/users/email/:email', async (req: Request, res: Response) => {
         } else {
             res.status(404).json({ error: 'User not found' });
         }
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PATCH profile update
+app.patch('/api/users/:id', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const updated = await pgService.updateUser(id, req.body);
+        res.json(updated);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// POST password change
+app.post('/api/users/:id/change-password', async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { currentPassword, newPassword } = req.body ?? {};
+        const result = await pgService.changePassword(id, currentPassword, newPassword);
+        if (!result.success) return res.status(400).json({ error: result.error || 'Password not changed' });
+        res.json({ success: true });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

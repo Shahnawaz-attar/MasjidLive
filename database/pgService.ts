@@ -310,6 +310,33 @@ export const pgService = {
         const user = toCamelCase(result.rows[0]) as User;
         const { password_hash, ...userWithoutPassword } = user;
         return userWithoutPassword;
+    },
+
+    updateUser: async (id: string, data: Partial<Pick<User, 'name' | 'email' | 'avatar'>>): Promise<Omit<User, 'password_hash'>> => {
+        const fields: string[] = [];
+        const values: any[] = [];
+        let cnt = 1;
+        if (data.name !== undefined) { fields.push(`name = $${cnt++}`); values.push(data.name); }
+        if (data.email !== undefined) { fields.push(`email = $${cnt++}`); values.push(data.email); }
+        if (data.avatar !== undefined) { fields.push(`avatar = $${cnt++}`); values.push(data.avatar); }
+        if (!fields.length) throw new Error("No profile fields to update");
+        values.push(id);
+        await pool.query(`UPDATE "users" SET ${fields.join(', ')} WHERE id = $${cnt}`, values);
+        const result = await pool.query('SELECT * FROM "users" WHERE id = $1', [id]);
+        if (result.rows.length === 0) throw new Error("User not found");
+        const { password_hash, ...without } = toCamelCase(result.rows[0]) as User;
+        return without;
+    },
+    changePassword: async (id: string, currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
+        const result = await pool.query('SELECT * FROM "users" WHERE id = $1', [id]);
+        if (result.rows.length === 0) return { success: false, error: "User not found" };
+        const user = toCamelCase(result.rows[0]) as User;
+        const isValid = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!isValid) return { success: false, error: "Current password is incorrect" };
+        if (!newPassword || newPassword.length < 6) return { success: false, error: "New password too short." };
+        const hash = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE "users" SET password_hash = $1 WHERE id = $2', [hash, id]);
+        return { success: true };
     }
 };
 

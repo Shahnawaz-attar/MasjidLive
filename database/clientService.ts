@@ -121,4 +121,18 @@ export default {
             return null;
         }
     },
+
+    updateUser: async (id: string, data: Partial<UserWithoutPassword>): Promise<UserWithoutPassword> => {
+        return apiCall(`/users/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
+        });
+    },
+
+    changePassword: async (id: string, currentPassword: string, newPassword: string): Promise<{ success: boolean }> => {
+        return apiCall(`/users/${id}/change-password`, {
+            method: 'POST',
+            body: JSON.stringify({ currentPassword, newPassword }),
+        });
+    },
 };

@@ -42,6 +42,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
     { id: 'donations', label: 'Donations', icon: DollarSignIcon },
     { id: 'events', label: 'Events', icon: CalendarIcon },
     { id: 'audit-log', label: 'Audit Log', icon: FileTextIcon },
+    { id: 'profile', label: 'Profile', icon: UsersIcon }, // <-- Added for profile manage
   ];
   
   return (
