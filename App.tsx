@@ -46,6 +46,7 @@ interface PrayerTimeFormModalProps {
     onSave: () => void;
 }
 
+
 const DashboardPage = ({ mosque }: { mosque: Mosque }) => {
     const [prayerTimes, setPrayerTimes] = useState<PrayerTime[]>([]);
     const [nextPrayer, setNextPrayer] = useState<PrayerTime | null>(null);
@@ -597,6 +598,11 @@ const PrayerTimesPage = ({ mosque }: { mosque: Mosque }) => {
         setIsEditModalOpen(true);
     };
 
+    const handleAddClick = () => {
+        setEditingPrayerTime(null);
+        setIsEditModalOpen(true);
+    };
+
     const columns: Column<PrayerTime>[] = [
         { header: 'Prayer', accessor: item => item.name, cellClassName: 'font-semibold' },
         { header: 'Time', accessor: item => item.time, cellClassName: 'text-lg font-bold' },
@@ -614,7 +620,10 @@ const PrayerTimesPage = ({ mosque }: { mosque: Mosque }) => {
          <div>
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Prayer Times</h1>
-                <Button variant="outline">Calculation Method</Button>
+                <div className="flex gap-2">
+                    <Button variant="outline">Calculation Method</Button>
+                    <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>Add Prayer Time</Button>
+                </div>
             </div>
             <DataTable columns={columns} data={times} />
             <PrayerTimeFormModal 
@@ -628,70 +637,602 @@ const PrayerTimesPage = ({ mosque }: { mosque: Mosque }) => {
     )
 };
 
+interface AnnouncementFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    mosqueId: string;
+    initialData?: Announcement | null;
+    onSave: () => void;
+}
+
+const AnnouncementFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave }: AnnouncementFormModalProps) => {
+    const [formData, setFormData] = useState<Omit<Announcement, 'id' | 'mosqueId'>>({
+        title: initialData?.title || '',
+        body: initialData?.body || '',
+        audience: initialData?.audience || 'All',
+        date: initialData?.date || new Date().toISOString().split('T')[0],
+    });
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                title: initialData.title,
+                body: initialData.body,
+                audience: initialData.audience,
+                date: initialData.date,
+            });
+        } else {
+            setFormData({
+                title: '',
+                body: '',
+                audience: 'All',
+                date: new Date().toISOString().split('T')[0],
+            });
+        }
+        setError('');
+    }, [initialData, isOpen]);
+
+    const handleChange = (e: InputChangeEvent | SelectChangeEvent | TextareaChangeEvent) => {
+        handleFormChange(setFormData, e);
+    };
+
+    const handleSubmit = async (e: FormSubmitEvent) => {
+        e.preventDefault();
+        setError('');
+
+        try {
+            if (initialData) {
+                await dbService.updateDoc('announcements', { ...initialData, ...formData, mosqueId });
+            } else {
+                await dbService.addDoc(mosqueId, 'announcements', formData);
+            }
+            onSave();
+            onClose();
+        } catch (err: any) {
+            setError('Failed to save announcement. Please try again.');
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={initialData ? 'Edit Announcement' : 'New Announcement'}>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-600 dark:text-red-400">
+                        {error}
+                    </div>
+                )}
+
+                <div className="space-y-2">
+                    <Label htmlFor="title">Title *</Label>
+                    <Input id="title" value={formData.title} onChange={handleChange} required />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="body">Body *</Label>
+                    <Textarea id="body" value={formData.body} onChange={handleChange} rows={4} required />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="audience">Audience *</Label>
+                        <select
+                            id="audience"
+                            value={formData.audience}
+                            onChange={handleChange}
+                            className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                            required
+                        >
+                            <option value="All">All</option>
+                            <option value="Members only">Members only</option>
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="date">Date *</Label>
+                        <Input id="date" type="date" value={formData.date} onChange={handleChange} required />
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button type="submit">{initialData ? 'Save Changes' : 'Create Announcement'}</Button>
+                </div>
+            </form>
+        </Modal>
+    );
+};
+
 const AnnouncementsPage = ({ mosque }: { mosque: Mosque }) => {
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
-    useEffect(() => {
-        // Fix: Specify the string literal type for the collection name
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+
+    const fetchAnnouncements = () => {
         dbService.getCollection<'announcements'>(mosque.id, 'announcements').then(setAnnouncements);
+    };
+
+    useEffect(() => {
+        fetchAnnouncements();
     }, [mosque]);
+
+    const handleAddClick = () => {
+        setEditingAnnouncement(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEditClick = (announcement: Announcement) => {
+        setEditingAnnouncement(announcement);
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteClick = async (announcementId: string) => {
+        if (window.confirm("Are you sure you want to delete this announcement?")) {
+            await dbService.deleteDoc('announcements', announcementId);
+            fetchAnnouncements();
+        }
+    };
+
     const columns: Column<Announcement>[] = [
         { header: 'Title', accessor: item => item.title },
         { header: 'Date', accessor: item => item.date },
         { header: 'Audience', accessor: item => item.audience },
+        {
+            header: 'Actions',
+            accessor: item => (
+                <div className="flex space-x-2">
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditClick(item))}>
+                        <EditIcon className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item.id))}>
+                        <TrashIcon className="h-4 w-4 text-red-500" />
+                    </Button>
+                </div>
+            )
+        },
     ];
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Announcements</h1>
-                <Button><PlusIcon className="h-4 w-4 mr-2"/>New Announcement</Button>
+                <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>New Announcement</Button>
             </div>
             <DataTable columns={columns} data={announcements} />
+            <AnnouncementFormModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                mosqueId={mosque.id}
+                initialData={editingAnnouncement}
+                onSave={fetchAnnouncements}
+            />
         </div>
     );
 }
 
+interface DonationFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    mosqueId: string;
+    initialData?: Donation | null;
+    onSave: () => void;
+}
+
+const DonationFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave }: DonationFormModalProps) => {
+    const [formData, setFormData] = useState<Omit<Donation, 'id' | 'mosqueId'>>({
+        donorName: initialData?.donorName || '',
+        amount: initialData?.amount || 0,
+        purpose: initialData?.purpose || '',
+        date: initialData?.date || new Date().toISOString().split('T')[0],
+    });
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                donorName: initialData.donorName,
+                amount: initialData.amount,
+                purpose: initialData.purpose,
+                date: initialData.date,
+            });
+        } else {
+            setFormData({
+                donorName: '',
+                amount: 0,
+                purpose: '',
+                date: new Date().toISOString().split('T')[0],
+            });
+        }
+        setError('');
+    }, [initialData, isOpen]);
+
+    const handleChange = (e: InputChangeEvent | SelectChangeEvent | TextareaChangeEvent) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({ ...prev, [id]: id === 'amount' ? parseFloat(value) || 0 : value }));
+    };
+
+    const handleSubmit = async (e: FormSubmitEvent) => {
+        e.preventDefault();
+        setError('');
+
+        try {
+            if (initialData) {
+                await dbService.updateDoc('donations', { ...initialData, ...formData, mosqueId });
+            } else {
+                await dbService.addDoc(mosqueId, 'donations', formData);
+            }
+            onSave();
+            onClose();
+        } catch (err: any) {
+            setError('Failed to save donation. Please try again.');
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={initialData ? 'Edit Donation' : 'Add Donation'}>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-600 dark:text-red-400">
+                        {error}
+                    </div>
+                )}
+
+                <div className="space-y-2">
+                    <Label htmlFor="donorName">Donor Name *</Label>
+                    <Input id="donorName" value={formData.donorName} onChange={handleChange} required />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="amount">Amount *</Label>
+                        <Input id="amount" type="number" step="0.01" min="0" value={formData.amount} onChange={handleChange} required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="date">Date *</Label>
+                        <Input id="date" type="date" value={formData.date} onChange={handleChange} required />
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="purpose">Purpose *</Label>
+                    <Input id="purpose" value={formData.purpose} onChange={handleChange} required />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button type="submit">{initialData ? 'Save Changes' : 'Add Donation'}</Button>
+                </div>
+            </form>
+        </Modal>
+    );
+};
+
 const DonationsPage = ({ mosque }: { mosque: Mosque }) => {
     const [donations, setDonations] = useState<Donation[]>([]);
-    useEffect(() => {
-        // Fix: Specify the string literal type for the collection name
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingDonation, setEditingDonation] = useState<Donation | null>(null);
+
+    const fetchDonations = () => {
         dbService.getCollection<'donations'>(mosque.id, 'donations').then(setDonations);
+    };
+
+    useEffect(() => {
+        fetchDonations();
     }, [mosque]);
+
+    const handleAddClick = () => {
+        setEditingDonation(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEditClick = (donation: Donation) => {
+        setEditingDonation(donation);
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteClick = async (donationId: string) => {
+        if (window.confirm("Are you sure you want to delete this donation?")) {
+            await dbService.deleteDoc('donations', donationId);
+            fetchDonations();
+        }
+    };
+
     const columns: Column<Donation>[] = [
         { header: 'Donor', accessor: item => item.donorName },
         { header: 'Amount', accessor: item => `$${item.amount.toFixed(2)}` },
         { header: 'Purpose', accessor: item => item.purpose },
         { header: 'Date', accessor: item => item.date },
+        {
+            header: 'Actions',
+            accessor: item => (
+                <div className="flex space-x-2">
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditClick(item))}>
+                        <EditIcon className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item.id))}>
+                        <TrashIcon className="h-4 w-4 text-red-500" />
+                    </Button>
+                </div>
+            )
+        },
     ];
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Donations</h1>
-                <Button><PlusIcon className="h-4 w-4 mr-2"/>Add Donation</Button>
+                <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>Add Donation</Button>
             </div>
             <DataTable columns={columns} data={donations} />
+            <DonationFormModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                mosqueId={mosque.id}
+                initialData={editingDonation}
+                onSave={fetchDonations}
+            />
         </div>
+    );
+};
+
+interface EventFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    mosqueId: string;
+    initialData?: CommunityEvent | null;
+    onSave: () => void;
+}
+
+const EventFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave }: EventFormModalProps) => {
+    const [formData, setFormData] = useState<Omit<CommunityEvent, 'id' | 'mosqueId'>>({
+        title: initialData?.title || '',
+        date: initialData?.date || new Date().toISOString().split('T')[0],
+        type: initialData?.type || 'Event',
+        capacity: initialData?.capacity || undefined,
+        booked: initialData?.booked || 0,
+    });
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                title: initialData.title,
+                date: initialData.date,
+                type: initialData.type,
+                capacity: initialData.capacity,
+                booked: initialData.booked || 0,
+            });
+        } else {
+            setFormData({
+                title: '',
+                date: new Date().toISOString().split('T')[0],
+                type: 'Event',
+                capacity: undefined,
+                booked: 0,
+            });
+        }
+        setError('');
+    }, [initialData, isOpen]);
+
+    const handleChange = (e: InputChangeEvent | SelectChangeEvent) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({ 
+            ...prev, 
+            [id]: id === 'capacity' || id === 'booked' ? (value ? parseInt(value) : undefined) : value 
+        }));
+    };
+
+    const handleSubmit = async (e: FormSubmitEvent) => {
+        e.preventDefault();
+        setError('');
+
+        try {
+            if (initialData) {
+                await dbService.updateDoc('events', { ...initialData, ...formData, mosqueId });
+            } else {
+                await dbService.addDoc(mosqueId, 'events', formData);
+            }
+            onSave();
+            onClose();
+        } catch (err: any) {
+            setError('Failed to save event. Please try again.');
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={initialData ? 'Edit Event' : 'Add Event'}>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-600 dark:text-red-400">
+                        {error}
+                    </div>
+                )}
+
+                <div className="space-y-2">
+                    <Label htmlFor="title">Title *</Label>
+                    <Input id="title" value={formData.title} onChange={handleChange} required />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="date">Date *</Label>
+                        <Input id="date" type="date" value={formData.date} onChange={handleChange} required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="type">Type *</Label>
+                        <select
+                            id="type"
+                            value={formData.type}
+                            onChange={handleChange}
+                            className="flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm"
+                            required
+                        >
+                            <option value="Event">Event</option>
+                            <option value="Iftari Slot">Iftari Slot</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="capacity">Capacity (optional)</Label>
+                        <Input id="capacity" type="number" min="0" value={formData.capacity || ''} onChange={handleChange} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="booked">Booked</Label>
+                        <Input id="booked" type="number" min="0" value={formData.booked || 0} onChange={handleChange} />
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                    <Button type="submit">{initialData ? 'Save Changes' : 'Add Event'}</Button>
+                </div>
+            </form>
+        </Modal>
     );
 };
 
 const EventsPage = ({ mosque }: { mosque: Mosque }) => {
     const [events, setEvents] = useState<CommunityEvent[]>([]);
-    useEffect(() => {
-        // Fix: Specify the string literal type for the collection name
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingEvent, setEditingEvent] = useState<CommunityEvent | null>(null);
+
+    const fetchEvents = () => {
         dbService.getCollection<'events'>(mosque.id, 'events').then(setEvents);
+    };
+
+    useEffect(() => {
+        fetchEvents();
     }, [mosque]);
+
+    const handleAddClick = () => {
+        setEditingEvent(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEditClick = (event: CommunityEvent) => {
+        setEditingEvent(event);
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteClick = async (eventId: string) => {
+        if (window.confirm("Are you sure you want to delete this event?")) {
+            await dbService.deleteDoc('events', eventId);
+            fetchEvents();
+        }
+    };
+
     const columns: Column<CommunityEvent>[] = [
         { header: 'Title', accessor: item => item.title },
         { header: 'Date', accessor: item => item.date },
         { header: 'Type', accessor: item => item.type },
-        { header: 'Booking', accessor: item => item.capacity ? `${item.booked}/${item.capacity}` : 'N/A' },
+        { header: 'Booking', accessor: item => item.capacity ? `${item.booked || 0}/${item.capacity}` : 'N/A' },
+        {
+            header: 'Actions',
+            accessor: item => (
+                <div className="flex space-x-2">
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditClick(item))}>
+                        <EditIcon className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item.id))}>
+                        <TrashIcon className="h-4 w-4 text-red-500" />
+                    </Button>
+                </div>
+            )
+        },
     ];
      return (
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Community Events</h1>
-                <Button><PlusIcon className="h-4 w-4 mr-2"/>Add Event</Button>
+                <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>Add Event</Button>
             </div>
             <DataTable columns={columns} data={events} />
+            <EventFormModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                mosqueId={mosque.id}
+                initialData={editingEvent}
+                onSave={fetchEvents}
+            />
+        </div>
+    );
+};
+
+const MosquesPage = ({ mosques, onMosqueChange, onRefresh }: { mosques: Mosque[], onMosqueChange: (mosque: Mosque) => void, onRefresh: () => void }) => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingMosque, setEditingMosque] = useState<Mosque | null>(null);
+
+    const handleAddClick = () => {
+        setEditingMosque(null);
+        setIsModalOpen(true);
+    };
+
+    const handleEditClick = (mosque: Mosque) => {
+        setEditingMosque(mosque);
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteClick = async (mosqueId: string) => {
+        if (window.confirm("Are you sure you want to delete this mosque? This will also delete all associated data (members, prayer times, events, etc.).")) {
+            try {
+                await dbService.deleteMosque(mosqueId);
+                onRefresh();
+            } catch (err: any) {
+                alert('Failed to delete mosque: ' + (err.message || 'Unknown error'));
+            }
+        }
+    };
+
+    const handleSave = (mosque: Mosque) => {
+        onRefresh();
+        if (editingMosque && editingMosque.id === mosque.id) {
+            onMosqueChange(mosque);
+        }
+    };
+
+    const columns: Column<Mosque>[] = [
+        { 
+            header: 'Mosque', 
+            accessor: item => (
+                <div className="flex items-center space-x-3">
+                    <img src={item.logoUrl} alt={item.name} className="h-10 w-10 rounded-md" />
+                    <div>
+                        <p className="font-semibold">{item.name}</p>
+                        <p className="text-xs text-gray-500">{item.address}</p>
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: 'Actions',
+            accessor: item => (
+                <div className="flex space-x-2">
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditClick(item))}>
+                        <EditIcon className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item.id))}>
+                        <TrashIcon className="h-4 w-4 text-red-500" />
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={(e: MouseClickEvent) => handleClick(e, () => onMosqueChange(item))}>
+                        Select
+                    </Button>
+                </div>
+            )
+        },
+    ];
+
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-4">
+                <h1 className="text-2xl font-bold">Mosques</h1>
+                <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>Add Mosque</Button>
+            </div>
+            <DataTable columns={columns} data={mosques} />
+            <MosqueFormModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSave={handleSave}
+                initialData={editingMosque}
+            />
         </div>
     );
 };
@@ -717,6 +1258,100 @@ const AuditLogPage = ({ mosque }: { mosque: Mosque }) => {
         </div>
     );
 }
+
+interface MosqueFormModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (mosque: Mosque) => void;
+    initialData?: Mosque | null;
+}
+
+const MosqueFormModal = ({ isOpen, onClose, onSave, initialData }: MosqueFormModalProps) => {
+    const [formData, setFormData] = useState({ name: '', address: '' });
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            if (initialData) {
+                setFormData({ name: initialData.name, address: initialData.address });
+            } else {
+                setFormData({ name: '', address: '' });
+            }
+            setError('');
+        }
+    }, [isOpen, initialData]);
+
+    const handleChange = (e: InputChangeEvent) => {
+        handleFormChange(setFormData, e);
+    };
+
+    const handleSubmit = async (e: FormSubmitEvent) => {
+        e.preventDefault();
+        setError('');
+
+        if (!formData.name.trim() || !formData.address.trim()) {
+            setError('Please fill in all required fields.');
+            return;
+        }
+
+        try {
+            if (initialData) {
+                const updatedMosque = await dbService.updateMosque(initialData.id, formData);
+                onSave(updatedMosque);
+            } else {
+                const newMosque = await dbService.createMosque(formData);
+                onSave(newMosque);
+            }
+            onClose();
+        } catch (err: any) {
+            setError(err.message || `Failed to ${initialData ? 'update' : 'create'} mosque. Please try again.`);
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={initialData ? 'Edit Mosque' : 'Add New Mosque'}>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-600 dark:text-red-400">
+                        {error}
+                    </div>
+                )}
+
+                <div className="space-y-2">
+                    <Label htmlFor="name">Mosque Name *</Label>
+                    <Input
+                        id="name"
+                        placeholder="e.g., Al-Rahma Masjid"
+                        value={formData.name}
+                        onChange={handleChange}
+                        required
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="address">Address *</Label>
+                    <Textarea
+                        id="address"
+                        placeholder="e.g., 123 Islamic Way, Muslim Town"
+                        value={formData.address}
+                        onChange={(e) => handleFormChange(setFormData, e)}
+                        rows={3}
+                        required
+                    />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        Cancel
+                    </Button>
+                    <Button type="submit">
+                        {initialData ? 'Save Changes' : 'Create Mosque'}
+                    </Button>
+                </div>
+            </form>
+        </Modal>
+    );
+};
 
 const LoginScreen = ({ onLoginSuccess, onBackToLanding }: { onLoginSuccess: (user: UserWithoutPassword) => void, onBackToLanding: () => void }) => {
     const [email, setEmail] = useState('');
@@ -778,13 +1413,20 @@ const LandingPage = ({ mosques, onGoToLogin }: { mosques: Mosque[], onGoToLogin:
     const [members, setMembers] = React.useState<Member[]>([]);
     const [events, setEvents] = React.useState<CommunityEvent[]>([]);
     const [prayerTimes, setPrayerTimes] = React.useState<PrayerTime[]>([]);
+    const [nextPrayer, setNextPrayer] = React.useState<PrayerTime | null>(null);
 
     useEffect(() => {
         if (!selectedId && mosques.length) setSelectedId(mosques[0].id);
     }, [mosques]);
 
     useEffect(() => {
-        if (!selectedId) return;
+        if (!selectedId) {
+            setSummary(null);
+            setMembers([]);
+            setEvents([]);
+            setPrayerTimes([]);
+            return;
+        }
         const fetch = async () => {
             const s = await dbService.getMosqueSummary(selectedId);
             setSummary(s);
@@ -797,6 +1439,28 @@ const LandingPage = ({ mosques, onGoToLogin }: { mosques: Mosque[], onGoToLogin:
         };
         fetch();
     }, [selectedId]);
+
+    useEffect(() => {
+        if (prayerTimes.length > 0) {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes();
+            const timeToMinutes = (time: string) => {
+                const [h, m] = time.match(/\d+/g) || ['0', '0'];
+                let hours = parseInt(h, 10);
+                const minutes = parseInt(m, 10);
+                if (time.toLowerCase().includes('pm') && hours !== 12) hours += 12;
+                if (time.toLowerCase().includes('am') && hours === 12) hours = 0;
+                return hours * 60 + minutes;
+            };
+            const sortedTimes = [...prayerTimes].sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+            const next = sortedTimes.find(p => timeToMinutes(p.time) > currentTime) || sortedTimes[0];
+            setNextPrayer(next);
+        } else {
+            setNextPrayer(null);
+        }
+    }, [prayerTimes]);
+
+    const selectedMosque = mosques.find(m => m.id === selectedId);
 
     return (
         <div className="min-h-screen bg-background dark:bg-dark-background">
@@ -822,6 +1486,38 @@ const LandingPage = ({ mosques, onGoToLogin }: { mosques: Mosque[], onGoToLogin:
                 {/* Widgets for selected mosque (visible to non-auth users) */}
                 {selectedId && (
                     <div className="max-w-5xl mx-auto space-y-6">
+                        {selectedMosque && (
+                            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-lg p-6 border border-primary/10">
+                                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">{selectedMosque.name}</h1>
+                                <p className="text-gray-600 dark:text-gray-300 flex items-center gap-2">
+                                    <span>📍 {selectedMosque.address}</span>
+                                </p>
+                                {nextPrayer && (
+                                    <p className="text-lg font-semibold text-primary mt-3 flex items-center gap-2">
+                                        ⏰ Next Prayer: <span className="text-gray-900 dark:text-white">{nextPrayer.name}</span> at <span className="font-bold">{nextPrayer.time}</span>
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                        
+                        {/* Next Prayer Card - Prominent Display */}
+                        {nextPrayer && (
+                            <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-2 border-primary/20 shadow-lg">
+                                <CardContent className="pt-6">
+                                    <div className="text-center">
+                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Next Prayer</p>
+                                        <div className="flex items-center justify-center gap-3 mb-2">
+                                            <span className="text-4xl">⏰</span>
+                                            <div>
+                                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{nextPrayer.name}</p>
+                                                <p className="text-2xl font-bold text-primary mt-1">{nextPrayer.time}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
                             <Card>
                                 <CardHeader>
@@ -842,17 +1538,6 @@ const LandingPage = ({ mosques, onGoToLogin }: { mosques: Mosque[], onGoToLogin:
                                 <CardContent>
                                     <div className="text-3xl font-bold">{events.length}</div>
                                     <p className="text-xs text-gray-500">Next: {events[0]?.title ?? '—'}</p>
-                                </CardContent>
-                            </Card>
-
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Next Prayer</CardTitle>
-                                    <CardDescription>Upcoming prayer time</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="text-3xl font-bold">{summary?.nextPrayer?.time ?? 'N/A'}</div>
-                                    <p className="text-xs text-gray-500">{summary?.nextPrayer?.name ?? ''}</p>
                                 </CardContent>
                             </Card>
                         </div>
@@ -959,15 +1644,46 @@ function App() {
   const [mosques, setMosques] = useState<Mosque[]>([]);
   const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
   const [currentPage, setCurrentPage] = useState('dashboard');
+  const [isMosqueModalOpen, setIsMosqueModalOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchMosques = () => {
     dbService.getMosques().then(data => {
         setMosques(data);
         if (data.length > 0 && !selectedMosque) {
             setSelectedMosque(data[0]);
         }
     });
+  };
+
+  useEffect(() => {
+    fetchMosques();
   }, []);
+
+  const handleAddMosque = () => {
+    setIsMosqueModalOpen(true);
+  };
+
+  const handleMosqueCreated = async (newMosque: Mosque) => {
+    setMosques([...mosques, newMosque]);
+    setSelectedMosque(newMosque);
+    
+    // Initialize default prayer times for the new mosque
+    const defaultPrayerTimes: Omit<PrayerTime, 'id'>[] = [
+        { name: 'Fajr', time: '05:30 AM' },
+        { name: 'Dhuhr', time: '01:30 PM' },
+        { name: 'Asr', time: '04:45 PM' },
+        { name: 'Maghrib', time: '07:15 PM' },
+        { name: 'Isha', time: '08:45 PM' }
+    ];
+
+    try {
+        for (const prayer of defaultPrayerTimes) {
+            await dbService.addDoc(newMosque.id, 'prayerTimes', prayer);
+        }
+    } catch (err) {
+        console.error('Error initializing prayer times:', err);
+    }
+  };
 
   const handleLogin = (loggedInUser: UserWithoutPassword) => {
     const asUser = loggedInUser as User;
@@ -984,17 +1700,32 @@ function App() {
   };
 
   const renderPage = () => {
-    if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-
     switch (currentPage) {
-        case 'dashboard': return <DashboardPage mosque={selectedMosque} />;
-        case 'members': return <MembersPage mosque={selectedMosque} />;
-        case 'prayer-times': return <PrayerTimesPage mosque={selectedMosque} />;
-        case 'announcements': return <AnnouncementsPage mosque={selectedMosque} />;
-        case 'donations': return <DonationsPage mosque={selectedMosque} />;
-        case 'events': return <EventsPage mosque={selectedMosque} />;
-        case 'audit-log': return <AuditLogPage mosque={selectedMosque} />;
-        default: return <DashboardPage mosque={selectedMosque} />;
+        case 'mosques': return <MosquesPage mosques={mosques} onMosqueChange={setSelectedMosque} onRefresh={fetchMosques} />;
+        case 'dashboard': 
+            if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
+            return <DashboardPage mosque={selectedMosque} />;
+        case 'members': 
+            if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
+            return <MembersPage mosque={selectedMosque} />;
+        case 'prayer-times': 
+            if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
+            return <PrayerTimesPage mosque={selectedMosque} />;
+        case 'announcements': 
+            if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
+            return <AnnouncementsPage mosque={selectedMosque} />;
+        case 'donations': 
+            if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
+            return <DonationsPage mosque={selectedMosque} />;
+        case 'events': 
+            if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
+            return <EventsPage mosque={selectedMosque} />;
+        case 'audit-log': 
+            if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
+            return <AuditLogPage mosque={selectedMosque} />;
+        default: 
+            if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
+            return <DashboardPage mosque={selectedMosque} />;
     }
   }
   
@@ -1005,22 +1736,38 @@ function App() {
     return <LandingPage mosques={mosques} onGoToLogin={() => setView('login')} />;
   }
   
-  if (!selectedMosque) {
+  // For mosques page, we don't need a selected mosque
+  if (currentPage !== 'mosques' && !selectedMosque) {
     return <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-background text-lg font-semibold text-gray-700 dark:text-gray-300">Loading mosques...</div>
   }
 
+  // For mosques page, use first mosque as selected for layout (or create a dummy one)
+  const layoutMosque = selectedMosque || (mosques.length > 0 ? mosques[0] : null);
+  
+  if (!layoutMosque && currentPage !== 'mosques') {
+    return <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-background text-lg font-semibold text-gray-700 dark:text-gray-300">No mosques available. Please create a mosque first.</div>
+  }
+
   return (
-    <Layout
-      user={user}
-      mosques={mosques}
-      selectedMosque={selectedMosque}
-      onMosqueChange={setSelectedMosque}
-      onNavigate={setCurrentPage}
-      currentPage={currentPage}
-      onLogout={handleLogout}
-    >
-      {renderPage()}
-    </Layout>
+    <>
+      <Layout
+        user={user}
+        mosques={mosques}
+        selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
+        onMosqueChange={setSelectedMosque}
+        onNavigate={setCurrentPage}
+        currentPage={currentPage}
+        onLogout={handleLogout}
+        onAddMosque={handleAddMosque}
+      >
+        {renderPage()}
+      </Layout>
+      <MosqueFormModal
+        isOpen={isMosqueModalOpen}
+        onClose={() => setIsMosqueModalOpen(false)}
+        onSave={handleMosqueCreated}
+      />
+    </>
   );
 }
 
