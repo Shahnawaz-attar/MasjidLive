@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import { Mosque, User, PrayerTime, UserWithoutPassword } from './types';
 import dbService from './database/clientService';
 import { MosqueFormModal } from './components/forms';
+import { useMosques } from './hooks/useData';
 import {
     DashboardPage,
     MembersPage,
@@ -49,39 +50,32 @@ function App() {
     }, [user]);
 
     const [view, setView] = useState('landing');
-    const [mosques, setMosques] = useState<Mosque[]>([]);
+    const { mosques, mutate: mutateMosques } = useMosques();
     const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
     const [currentPage, setCurrentPage] = useState('dashboard');
     const [isMosqueModalOpen, setIsMosqueModalOpen] = useState(false);
 
-    const fetchMosques = () => {
-        dbService.getMosques().then(data => {
-            setMosques(data);
-            if (data.length > 0 && !selectedMosque) {
-                // If user has a mosque_id (Imam or Muazzin), set their mosque
-                if (user && user.mosque_id) {
-                    const userMosque = data.find(m => m.id === user.mosque_id);
-                    if (userMosque) {
-                        setSelectedMosque(userMosque);
-                        return;
-                    }
-                }
-                // Otherwise set first mosque (for Admin or if mosque not found)
-                setSelectedMosque(data[0]);
-            }
-        });
-    };
-
+    // Auto-select mosque when mosques load or user changes
     useEffect(() => {
-        fetchMosques();
-    }, [user]); // Add user as dependency to re-fetch when user changes
-
+        if (mosques.length > 0 && !selectedMosque) {
+            // If user has a mosque_id (Imam or Muazzin), set their mosque
+            if (user && user.mosque_id) {
+                const userMosque = mosques.find(m => m.id === user.mosque_id);
+                if (userMosque) {
+                    setSelectedMosque(userMosque);
+                    return;
+                }
+            }
+            // Otherwise set first mosque (for Admin or if mosque not found)
+            setSelectedMosque(mosques[0]);
+        }
+    }, [mosques, user, selectedMosque]);
     const handleAddMosque = () => {
         setIsMosqueModalOpen(true);
     };
 
     const handleMosqueCreated = async (newMosque: Mosque) => {
-        setMosques([...mosques, newMosque]);
+        await mutateMosques(); // Revalidate mosques list
         setSelectedMosque(newMosque);
         
         // Initialize default prayer times for the new mosque
@@ -131,7 +125,7 @@ function App() {
         
         switch (currentPage) {
             case 'mosques': 
-                return <MosquesPage mosques={mosques} onMosqueChange={setSelectedMosque} onRefresh={fetchMosques} userRole={userRole} />;
+                return <MosquesPage mosques={mosques} onMosqueChange={setSelectedMosque} onRefresh={mutateMosques} userRole={userRole} />;
             case 'dashboard': 
                 if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
                 return <DashboardPage mosque={selectedMosque} />;

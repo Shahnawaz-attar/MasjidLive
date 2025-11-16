@@ -1,10 +1,11 @@
-import { useState, useEffect, MouseEvent } from 'react';
+import { useState, MouseEvent } from 'react';
 import { Mosque, Announcement } from '../../types';
 import { Button } from '../ui';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { DataTable, Column } from '../DataTable';
 import { AnnouncementFormModal } from '../forms/AnnouncementFormModal';
 import dbService from '../../database/clientService';
+import { useAnnouncements } from '../../hooks/useData';
 
 type MouseClickEvent = MouseEvent<HTMLButtonElement>;
 
@@ -14,17 +15,9 @@ const handleClick = (e: MouseClickEvent, callback: () => void) => {
 };
 
 export const AnnouncementsPage = ({ mosque }: { mosque: Mosque }) => {
-    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    const { announcements, isLoading, mutate } = useAnnouncements(mosque.id);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
-
-    const fetchAnnouncements = () => {
-        dbService.getCollection<'announcements'>(mosque.id, 'announcements').then(setAnnouncements);
-    };
-
-    useEffect(() => {
-        fetchAnnouncements();
-    }, [mosque]);
 
     const handleAddClick = () => {
         setEditingAnnouncement(null);
@@ -39,8 +32,13 @@ export const AnnouncementsPage = ({ mosque }: { mosque: Mosque }) => {
     const handleDeleteClick = async (announcementId: string) => {
         if (window.confirm("Are you sure you want to delete this announcement?")) {
             await dbService.deleteDoc('announcements', announcementId);
-            fetchAnnouncements();
+            mutate(); // Revalidate data
         }
+    };
+    
+    const handleSave = () => {
+        mutate(); // Revalidate data after save
+        setIsModalOpen(false);
     };
 
     const columns: Column<Announcement>[] = [
@@ -68,13 +66,17 @@ export const AnnouncementsPage = ({ mosque }: { mosque: Mosque }) => {
                 <h1 className="text-2xl font-bold">Announcements</h1>
                 <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>New Announcement</Button>
             </div>
-            <DataTable columns={columns} data={announcements} />
+            {isLoading ? (
+                <div className="text-center py-8 text-gray-500">Loading announcements...</div>
+            ) : (
+                <DataTable columns={columns} data={announcements} />
+            )}
             <AnnouncementFormModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 mosqueId={mosque.id}
                 initialData={editingAnnouncement}
-                onSave={fetchAnnouncements}
+                onSave={handleSave}
             />
         </div>
     );
