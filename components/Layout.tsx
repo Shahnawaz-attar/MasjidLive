@@ -46,7 +46,9 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
   ];
   
   // Filter navigation items based on user role
-  const navItems = allNavItems.filter(item => item.roles.includes(user.role));
+  // Default to Admin if role is not set (for backward compatibility)
+  const userRole = user.role || 'Admin';
+  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
   
   return (
     <div className="min-h-screen bg-background dark:bg-dark-background">
@@ -118,8 +120,8 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
           <div className="flex-1 lg:hidden"></div>
 
           <div className="relative">
-            {/* Only show dropdown for Admin users */}
-            {user.role === 'Admin' ? (
+            {/* Only show dropdown for Admin users (or users without role for backward compatibility) */}
+            {(!user.role || user.role === 'Admin') ? (
               <>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}

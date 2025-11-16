@@ -9,7 +9,7 @@ export interface User {
     username: string;
     avatar?: string;
     password_hash: string;
-    role: UserRole;
+    role?: UserRole; // Optional for backward compatibility with existing users
     mosque_id?: string;
     address?: string;
 }

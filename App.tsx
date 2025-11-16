@@ -126,7 +126,8 @@ function App() {
     };
 
     const renderPage = () => {
-        const userRole = user?.role || 'Muazzin';
+        // Default to Admin if role is not set (for backward compatibility with old users)
+        const userRole = user?.role || 'Admin';
         
         switch (currentPage) {
             case 'mosques': 
