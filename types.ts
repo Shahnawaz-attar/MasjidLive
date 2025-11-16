@@ -26,6 +26,7 @@ export interface Member {
   contact: string;
   background: string;
   education?: MemberEducation;
+  userId?: string; // Link to User table - if set, this member is a system user and cannot be edited
 }
 
 export interface PrayerTime {

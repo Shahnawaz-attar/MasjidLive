@@ -77,6 +77,14 @@ async function createAdmin() {
                 [userId, 'Admin', 'admin@masjid.com', 'admin', passwordHash, 'Admin', mosqueId, avatar]
             );
 
+            // Also create a member entry for admin (linked to user)
+            const memberId = `member-${nanoid()}`;
+            await pool.query(
+                `INSERT INTO members (id, mosque_id, name, role, photo, contact, background, user_id) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                [memberId, mosqueId, 'Admin', 'Committee', avatar, 'admin@masjid.com', 'System Administrator', userId]
+            );
+
             console.log('✅ Admin user created successfully!\n');
         }
 

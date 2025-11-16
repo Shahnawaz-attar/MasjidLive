@@ -136,10 +136,30 @@ export const pgService = {
             const password_hash = await bcrypt.hash(data.password, 10);
             const avatar = `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(data.name)}`;
 
+            // Insert user
             await pool.query(
                 `INSERT INTO "users" (id, name, username, email, password_hash, role, mosque_id, address, avatar) 
                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
                 [id, data.name, data.username, data.email || null, password_hash, data.role, data.mosque_id, data.address || null, avatar]
+            );
+
+            // Also create a member entry linked to this user
+            // This makes the user visible in the members list but protected from editing
+            const memberId = `member-${nanoid()}`;
+            const contact = data.email || 'Not provided';
+            await pool.query(
+                `INSERT INTO members (id, mosque_id, name, role, photo, contact, background, user_id) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+                [
+                    memberId, 
+                    data.mosque_id, 
+                    data.name, 
+                    data.role, // Use same role as user (Imam or Muazzin)
+                    avatar, 
+                    contact,
+                    `System user - ${data.role}`,
+                    id // Link to user
+                ]
             );
 
             const newUser: Omit<User, 'password_hash'> = {

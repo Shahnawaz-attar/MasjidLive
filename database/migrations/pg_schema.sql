@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS members (
     contact TEXT,
     background TEXT,
     education TEXT CHECK(education IN ('Mufti', 'Hafiz', 'Talimuddin', 'None')),
+    user_id TEXT REFERENCES "users"(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
