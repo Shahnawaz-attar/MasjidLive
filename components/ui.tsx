@@ -173,7 +173,64 @@ const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HT
 );
 Select.displayName = 'Select';
 
-export { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Input, Label, Textarea, Modal, Select };
+// Skeleton Loading Component
+interface SkeletonProps {
+  className?: string;
+  variant?: 'text' | 'circular' | 'rectangular';
+  width?: string | number;
+  height?: string | number;
+}
+
+const Skeleton: React.FC<SkeletonProps> = ({
+  className = '',
+  variant = 'rectangular',
+  width,
+  height,
+}) => {
+  const baseClass = 'animate-pulse bg-gray-200 dark:bg-gray-700';
+  
+  const variantClasses = {
+    text: 'rounded h-4',
+    circular: 'rounded-full',
+    rectangular: 'rounded',
+  };
+
+  const style: React.CSSProperties = {};
+  if (width) style.width = typeof width === 'number' ? `${width}px` : width;
+  if (height) style.height = typeof height === 'number' ? `${height}px` : height;
+
+  return (
+    <div
+      className={`${baseClass} ${variantClasses[variant]} ${className}`}
+      style={style}
+    />
+  );
+};
+
+// Skeleton presets
+export const TableSkeleton: React.FC<{ rows?: number; columns?: number }> = ({
+  rows = 5,
+  columns = 4,
+}) => (
+  <div className="space-y-4">
+    {/* Header */}
+    <div className="flex gap-4">
+      {Array.from({ length: columns }).map((_, i) => (
+        <Skeleton key={`header-${i}`} height={40} className="flex-1" />
+      ))}
+    </div>
+    {/* Rows */}
+    {Array.from({ length: rows }).map((_, rowIndex) => (
+      <div key={`row-${rowIndex}`} className="flex gap-4">
+        {Array.from({ length: columns }).map((_, colIndex) => (
+          <Skeleton key={`cell-${rowIndex}-${colIndex}`} height={50} className="flex-1" />
+        ))}
+      </div>
+    ))}
+  </div>
+);
+
+export { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Input, Label, Textarea, Modal, Select, Skeleton };
 
 const XIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>

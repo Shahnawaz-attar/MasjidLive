@@ -24,12 +24,30 @@ async function runMigration() {
         const testResult = await pool.query('SELECT NOW()');
         console.log('✓ Connected to database at:', testResult.rows[0].now);
         
-        // Read and execute migration
-        const migrationPath = join(__dirname, '../database/migrations/002_add_user_roles.sql');
-        const migration = readFileSync(migrationPath, 'utf-8');
+        // Get all migration files and sort them
+        const migrationsDir = join(__dirname, '../database/migrations');
+        const fs = await import('fs');
+        const migrationFiles = fs.readdirSync(migrationsDir)
+            .filter(f => f.match(/^\d{3}_.*\.sql$/))
+            .sort(); // This will sort: 001_, 002_, 003_, etc.
         
-        console.log('\nRunning migration: 002_add_user_roles.sql');
-        console.log('This will add role-based access control fields to the users table...\n');
+        if (migrationFiles.length === 0) {
+            console.log('⚠ No migration files found');
+            await pool.end();
+            return;
+        }
+        
+        console.log(`\nFound ${migrationFiles.length} migration file(s):`);
+        migrationFiles.forEach((file, i) => console.log(`  ${i + 1}. ${file}`));
+        console.log('');
+        
+        // Run each migration
+        for (const migrationFile of migrationFiles) {
+            const migrationPath = join(migrationsDir, migrationFile);
+            const migration = readFileSync(migrationPath, 'utf-8');
+            
+            console.log(`\nRunning migration: ${migrationFile}`);
+            console.log('─'.repeat(50));
         
         // Remove comments and split by semicolons
         const lines = migration.split('\n');
@@ -55,46 +73,52 @@ async function runMigration() {
             }
         }
         
-        // Execute statements in order
-        for (let i = 0; i < statements.length; i++) {
-            const statement = statements[i];
-            try {
-                await pool.query(statement);
-                
-                // Extract operation for better logging
-                if (statement.includes('ALTER TABLE')) {
-                    if (statement.includes('ADD COLUMN')) {
-                        const colMatch = statement.match(/ADD COLUMN (?:IF NOT EXISTS )?(\w+)/i);
-                        console.log(`✓ Added column: ${colMatch ? colMatch[1] : 'unknown'}`);
-                    } else if (statement.includes('ALTER COLUMN')) {
-                        console.log('✓ Modified column');
+            // Execute statements in order
+            for (let i = 0; i < statements.length; i++) {
+                const statement = statements[i];
+                try {
+                    await pool.query(statement);
+                    
+                    // Extract operation for better logging
+                    if (statement.includes('ALTER TABLE')) {
+                        if (statement.includes('ADD COLUMN')) {
+                            const colMatch = statement.match(/ADD COLUMN (?:IF NOT EXISTS )?(\w+)/i);
+                            console.log(`  ✓ Added column: ${colMatch ? colMatch[1] : 'unknown'}`);
+                        } else if (statement.includes('ALTER COLUMN')) {
+                            console.log('  ✓ Modified column');
+                        }
+                    } else if (statement.includes('UPDATE')) {
+                        const result = await pool.query(statement);
+                        console.log(`  ✓ Updated ${result.rowCount} rows`);
+                    } else if (statement.includes('CREATE INDEX')) {
+                        const indexMatch = statement.match(/CREATE INDEX IF NOT EXISTS (idx_\w+)/i);
+                        console.log(`  ✓ Created index: ${indexMatch ? indexMatch[1] : 'unknown'}`);
+                    } else if (statement.includes('CREATE TABLE')) {
+                        console.log('  ✓ Created table');
                     }
-                } else if (statement.includes('UPDATE')) {
-                    const result = await pool.query(statement);
-                    console.log(`✓ Updated ${result.rowCount} rows`);
-                } else if (statement.includes('CREATE INDEX')) {
-                    const indexMatch = statement.match(/CREATE INDEX IF NOT EXISTS (idx_\w+)/i);
-                    console.log(`✓ Created index: ${indexMatch ? indexMatch[1] : 'unknown'}`);
-                }
-            } catch (error: any) {
-                // Ignore "already exists" errors for idempotency
-                if (error.message.includes('already exists') || 
-                    error.message.includes('duplicate') ||
-                    error.code === '42701' || // duplicate_column
-                    error.code === '42P07') { // duplicate_table
-                    console.log(`ℹ Skipping (already exists)`);
-                } else {
-                    console.error(`✗ Error on statement ${i + 1}:`, error.message);
-                    console.error('Statement:', statement.substring(0, 150));
-                    // Don't exit, continue with other statements
+                } catch (error: any) {
+                    // Ignore "already exists" errors for idempotency
+                    if (error.message.includes('already exists') || 
+                        error.message.includes('duplicate') ||
+                        error.code === '42701' || // duplicate_column
+                        error.code === '42P07') { // duplicate_table
+                        console.log(`  ℹ Skipping (already exists)`);
+                    } else {
+                        console.error(`  ✗ Error on statement ${i + 1}:`, error.message);
+                        console.error('  Statement:', statement.substring(0, 150));
+                        // Don't exit, continue with other statements
+                    }
                 }
             }
         }
         
-        console.log('\n✓ Migration complete!');
+        console.log('\n' + '='.repeat(50));
+        console.log('✓ All migrations complete!');
+        console.log('='.repeat(50));
         console.log('\nNext steps:');
         console.log('1. Create an admin user if you haven\'t already: npm run create-admin');
         console.log('2. Users can now register as Imam or Muazzin through the UI');
+        console.log('3. Clear browser localStorage and log in again if you had issues');
         
         await pool.end();
     } catch (error: any) {
