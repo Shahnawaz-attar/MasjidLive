@@ -19,7 +19,7 @@ const fetcher = <T,>(key: string, mosqueId: string, collection: string) => {
 export function useMembers(mosqueId: string) {
     const { data, error, isLoading, mutate } = useSWR<Member[]>(
         mosqueId ? [`members`, mosqueId, 'members'] : null,
-        ([_, mosqueId, collection]) => fetcher<Member>(_, mosqueId, collection),
+        ([_, mosqueIdParam, collection]: [string, string, string]) => fetcher<Member>(_, mosqueIdParam, collection),
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
@@ -40,7 +40,7 @@ export function useMembers(mosqueId: string) {
 export function usePrayerTimes(mosqueId: string) {
     const { data, error, isLoading, mutate } = useSWR<PrayerTime[]>(
         mosqueId ? [`prayerTimes`, mosqueId, 'prayerTimes'] : null,
-        ([_, mosqueId, collection]) => fetcher<PrayerTime>(_, mosqueId, collection),
+        ([_, mosqueIdParam, collection]: [string, string, string]) => fetcher<PrayerTime>(_, mosqueIdParam, collection),
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
@@ -61,7 +61,7 @@ export function usePrayerTimes(mosqueId: string) {
 export function useAnnouncements(mosqueId: string) {
     const { data, error, isLoading, mutate } = useSWR<Announcement[]>(
         mosqueId ? [`announcements`, mosqueId, 'announcements'] : null,
-        ([_, mosqueId, collection]) => fetcher<Announcement>(_, mosqueId, collection),
+        ([_, mosqueIdParam, collection]: [string, string, string]) => fetcher<Announcement>(_, mosqueIdParam, collection),
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
@@ -80,9 +80,9 @@ export function useAnnouncements(mosqueId: string) {
  * Hook to fetch donations for a specific mosque
  */
 export function useDonations(mosqueId: string) {
-    const { data, error, isLoading, mutate } = useSWR<Donation[]>(
+    const { data, error, isLoading, mutate} = useSWR<Donation[]>(
         mosqueId ? [`donations`, mosqueId, 'donations'] : null,
-        ([_, mosqueId, collection]) => fetcher<Donation>(_, mosqueId, collection),
+        ([_, mosqueIdParam, collection]: [string, string, string]) => fetcher<Donation>(_, mosqueIdParam, collection),
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
@@ -103,7 +103,7 @@ export function useDonations(mosqueId: string) {
 export function useEvents(mosqueId: string) {
     const { data, error, isLoading, mutate } = useSWR<CommunityEvent[]>(
         mosqueId ? [`events`, mosqueId, 'events'] : null,
-        ([_, mosqueId, collection]) => fetcher<CommunityEvent>(_, mosqueId, collection),
+        ([_, mosqueIdParam, collection]: [string, string, string]) => fetcher<CommunityEvent>(_, mosqueIdParam, collection),
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
@@ -124,7 +124,7 @@ export function useEvents(mosqueId: string) {
 export function useAuditLogs(mosqueId: string) {
     const { data, error, isLoading, mutate } = useSWR<AuditLog[]>(
         mosqueId ? [`auditLogs`, mosqueId, 'auditLogs'] : null,
-        ([_, mosqueId, collection]) => fetcher<AuditLog>(_, mosqueId, collection),
+        ([_, mosqueIdParam, collection]: [string, string, string]) => fetcher<AuditLog>(_, mosqueIdParam, collection),
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: true,
@@ -145,7 +145,7 @@ export function useAuditLogs(mosqueId: string) {
 export function useMosqueSummary(mosqueId: string) {
     const { data, error, isLoading, mutate } = useSWR<MosqueSummary>(
         mosqueId ? [`summary`, mosqueId] : null,
-        ([_, mosqueId]) => dbService.getMosqueSummary(mosqueId),
+        ([_, mosqueIdParam]: [string, string]) => dbService.getMosqueSummary(mosqueIdParam),
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: true,

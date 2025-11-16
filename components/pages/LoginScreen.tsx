@@ -37,14 +37,14 @@ export const LoginScreen = ({ onLoginSuccess, onBackToLanding, onGoToRegister }:
                 </div>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Admin Login</CardTitle>
+                        <CardTitle>Login</CardTitle>
                         <CardDescription>Enter your credentials to access the dashboard.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
-                                <Label htmlFor="email">Email</Label>
-                                <Input id="email" type="email" placeholder="admin@masjid.com" required value={email} onChange={handleEmailChange} />
+                                <Label htmlFor="email">Email or Username</Label>
+                                <Input id="email" type="text" placeholder="admin or admin@masjid.com" required value={email} onChange={handleEmailChange} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="password">Password</Label>
