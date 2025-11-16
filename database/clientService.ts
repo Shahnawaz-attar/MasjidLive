@@ -1,8 +1,8 @@
 // Browser-safe database client — makes HTTP calls to API server
 import { User, Mosque, Member, PrayerTime, Announcement, Donation, CommunityEvent, AuditLog, MosqueSummary, UserWithoutPassword, UserPreference } from '../types';
 
-// Use environment variable or fallback to localhost for development
-const API_BASE_URL = (import.meta.env?.VITE_API_URL as string) || 
+// Vercel deployment configuration
+const API_BASE_URL = import.meta.env.VITE_API_URL || 
                      (typeof window !== 'undefined' && window.location.origin.includes('citymasjid.info') 
                       ? 'https://www.citymasjid.info/api' 
                       : 'http://localhost:3002/api');

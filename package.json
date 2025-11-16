@@ -10,7 +10,7 @@
     "server": "tsx server/index.ts",
     "server:dev": "tsx watch server/index.ts",
     "server:prod": "NODE_ENV=production tsx server/index.ts",
-    "build:prod": "VITE_API_URL=https://www.citymasjid.info/api vite build",
+    "vercel-build": "vite build",
     "start": "NODE_ENV=production tsx server/index.ts",
     "setup-db": "tsx scripts/setup-pg-db.ts",
     "create-admin": "tsx scripts/create-admin.ts",
