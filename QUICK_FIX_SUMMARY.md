@@ -35,8 +35,20 @@ When you ran the setup commands, you encountered these errors:
 
 ### Option 1: Quick Fresh Start (Recommended)
 
+**METHOD A: Using SQL Script**
 ```bash
-# 1. Connect to your database and drop all tables
+# Run the drop script directly
+psql $DATABASE_URL -f scripts/drop-all-tables.sql
+
+# Then do fresh setup
+npm run setup-db
+npm run migrate
+npm run create-admin
+```
+
+**METHOD B: Manual SQL Commands**
+```bash
+# 1. Connect to your database
 psql $DATABASE_URL
 
 # 2. In psql, run:
