@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS community_events (
 CREATE TABLE IF NOT EXISTS audit_logs (
     id TEXT PRIMARY KEY,
     mosque_id TEXT NOT NULL REFERENCES mosques(id),
-    "user" TEXT NOT NULL,
+    user_name TEXT NOT NULL,
     action TEXT NOT NULL,
     details TEXT NOT NULL,
     date TEXT NOT NULL,
