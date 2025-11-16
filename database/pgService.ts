@@ -76,8 +76,12 @@ const toSnakeCase = (obj: any): any => {
 };
 
 export const pgService = {
-    login: async (email: string, password: string): Promise<Omit<User, 'password_hash'> | null> => {
-        const result = await pool.query('SELECT * FROM "users" WHERE email = $1', [email]);
+    login: async (usernameOrEmail: string, password: string): Promise<Omit<User, 'password_hash'> | null> => {
+        // Check if input is email or username
+        const result = await pool.query(
+            'SELECT * FROM "users" WHERE username = $1 OR email = $1',
+            [usernameOrEmail]
+        );
         if (result.rows.length === 0) return null;
         
         const user = toCamelCase(result.rows[0]) as User;
@@ -86,6 +90,73 @@ export const pgService = {
         
         const { password_hash, ...userWithoutPassword } = user;
         return userWithoutPassword;
+    },
+
+    register: async (data: {
+        name: string;
+        username: string;
+        password: string;
+        email?: string;
+        role: 'Imam' | 'Muazzin';
+        mosque_id: string;
+        address?: string;
+    }): Promise<{ success: boolean; user?: Omit<User, 'password_hash'>; error?: string }> => {
+        // Validate password length
+        if (!data.password || data.password.length < 8) {
+            return { success: false, error: 'Password must be at least 8 characters long' };
+        }
+
+        // Validate username
+        if (!data.username || data.username.length < 3) {
+            return { success: false, error: 'Username must be at least 3 characters long' };
+        }
+
+        // Check if username already exists
+        const existingUser = await pool.query('SELECT id FROM "users" WHERE username = $1', [data.username]);
+        if (existingUser.rows.length > 0) {
+            return { success: false, error: 'Username already exists' };
+        }
+
+        // Check if email already exists (if provided)
+        if (data.email) {
+            const existingEmail = await pool.query('SELECT id FROM "users" WHERE email = $1', [data.email]);
+            if (existingEmail.rows.length > 0) {
+                return { success: false, error: 'Email already exists' };
+            }
+        }
+
+        // Verify mosque exists
+        const mosqueCheck = await pool.query('SELECT id FROM mosques WHERE id = $1', [data.mosque_id]);
+        if (mosqueCheck.rows.length === 0) {
+            return { success: false, error: 'Invalid mosque ID' };
+        }
+
+        try {
+            const id = `user-${nanoid()}`;
+            const password_hash = await bcrypt.hash(data.password, 10);
+            const avatar = `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(data.name)}`;
+
+            await pool.query(
+                `INSERT INTO "users" (id, name, username, email, password_hash, role, mosque_id, address, avatar) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                [id, data.name, data.username, data.email || null, password_hash, data.role, data.mosque_id, data.address || null, avatar]
+            );
+
+            const newUser: Omit<User, 'password_hash'> = {
+                id,
+                name: data.name,
+                username: data.username,
+                email: data.email,
+                role: data.role,
+                mosque_id: data.mosque_id,
+                address: data.address,
+                avatar
+            };
+
+            return { success: true, user: newUser };
+        } catch (error: any) {
+            return { success: false, error: error.message || 'Registration failed' };
+        }
     },
 
     getMosques: async (): Promise<Mosque[]> => {

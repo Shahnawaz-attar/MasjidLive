@@ -11,10 +11,13 @@ CREATE TABLE IF NOT EXISTS mosques (
 CREATE TABLE IF NOT EXISTS "users" (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
+    email TEXT,
+    username TEXT UNIQUE NOT NULL,
     avatar TEXT,
     password_hash TEXT NOT NULL,
-    mosque_id TEXT REFERENCES mosques(id)
+    role TEXT CHECK(role IN ('Admin', 'Imam', 'Muazzin')) DEFAULT 'Muazzin',
+    mosque_id TEXT REFERENCES mosques(id),
+    address TEXT
 );
 
 CREATE TABLE IF NOT EXISTS members (

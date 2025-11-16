@@ -13,6 +13,7 @@ import {
     MosquesPage,
     AuditLogPage,
     LoginScreen,
+    RegistrationScreen,
     LandingPage,
     AdminProfilePage
 } from './components/pages';
@@ -107,15 +108,17 @@ function App() {
     };
 
     const renderPage = () => {
+        const userRole = user?.role || 'Muazzin';
+        
         switch (currentPage) {
             case 'mosques': 
-                return <MosquesPage mosques={mosques} onMosqueChange={setSelectedMosque} onRefresh={fetchMosques} />;
+                return <MosquesPage mosques={mosques} onMosqueChange={setSelectedMosque} onRefresh={fetchMosques} userRole={userRole} />;
             case 'dashboard': 
                 if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
                 return <DashboardPage mosque={selectedMosque} />;
             case 'members': 
                 if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-                return <MembersPage mosque={selectedMosque} />;
+                return <MembersPage mosque={selectedMosque} userRole={userRole} />;
             case 'prayer-times': 
                 if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
                 return <PrayerTimesPage mosque={selectedMosque} />;
@@ -141,7 +144,18 @@ function App() {
     
     if (!user) {
         if (view === 'login') {
-            return <LoginScreen onLoginSuccess={handleLogin} onBackToLanding={() => setView('landing')} />;
+            return <LoginScreen 
+                onLoginSuccess={handleLogin} 
+                onBackToLanding={() => setView('landing')} 
+                onGoToRegister={() => setView('register')}
+            />;
+        }
+        if (view === 'register') {
+            return <RegistrationScreen
+                mosques={mosques}
+                onRegistrationSuccess={handleLogin}
+                onBackToLogin={() => setView('login')}
+            />;
         }
         return <LandingPage mosques={mosques} onGoToLogin={() => setView('login')} />;
     }

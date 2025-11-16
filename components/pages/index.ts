@@ -7,5 +7,6 @@ export { EventsPage } from './EventsPage';
 export { MosquesPage } from './MosquesPage';
 export { AuditLogPage } from './AuditLogPage';
 export { LoginScreen } from './LoginScreen';
+export { RegistrationScreen } from './RegistrationScreen';
 export { LandingPage } from './LandingPage';
 export { AdminProfilePage } from './AdminProfilePage';

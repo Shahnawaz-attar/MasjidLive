@@ -13,11 +13,12 @@ const handleClick = (e: MouseClickEvent, callback: () => void) => {
     callback();
 };
 
-export const MembersPage = ({ mosque }: { mosque: Mosque }) => {
+export const MembersPage = ({ mosque, userRole }: { mosque: Mosque; userRole: string }) => {
     const [members, setMembers] = useState<Member[]>([]);
     const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
     const [editingMember, setEditingMember] = useState<Member | null>(null);
-
+    
+    const isReadOnly = userRole === 'Muazzin'; // Muazzin can only view members
     const fetchMembers = () => {
         dbService.getCollection<'members'>(mosque.id, 'members').then(setMembers);
     };
@@ -47,9 +48,9 @@ export const MembersPage = ({ mosque }: { mosque: Mosque }) => {
         { header: 'Name', accessor: item => <div className="flex items-center space-x-3"><img src={item.photo} className="h-10 w-10 rounded-full" alt={item.name}/><span>{item.name}</span></div> },
         { header: 'Role', accessor: item => item.role },
         { header: 'Contact', accessor: item => item.contact },
-        {
+        ...(!isReadOnly ? [{
             header: 'Actions', 
-            accessor: item => (
+            accessor: (item: Member) => (
                 <div className="flex space-x-2">
                     <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditMember(item))}>
                         <EditIcon className="h-4 w-4" />
@@ -59,23 +60,30 @@ export const MembersPage = ({ mosque }: { mosque: Mosque }) => {
                     </Button>
                 </div>
             )
-        },
+        }] : []),
     ];
     
     return (
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Members</h1>
-                <Button onClick={handleAddMemberClick}><PlusIcon className="h-4 w-4 mr-2"/>Add Member</Button>
+                {!isReadOnly && <Button onClick={handleAddMemberClick}><PlusIcon className="h-4 w-4 mr-2"/>Add Member</Button>}
             </div>
+            {isReadOnly && (
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">You have read-only access to view members.</p>
+                </div>
+            )}
             <DataTable columns={columns} data={members} />
-            <MemberFormModal 
-                isOpen={isMemberModalOpen} 
-                onClose={() => setIsMemberModalOpen(false)} 
-                mosqueId={mosque.id} 
-                initialData={editingMember} 
-                onSave={fetchMembers} 
-            />
+            {!isReadOnly && (
+                <MemberFormModal 
+                    isOpen={isMemberModalOpen} 
+                    onClose={() => setIsMemberModalOpen(false)} 
+                    mosqueId={mosque.id} 
+                    initialData={editingMember} 
+                    onSave={fetchMembers} 
+                />
+            )}
         </div>
     );
 };

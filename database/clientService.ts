@@ -41,6 +41,26 @@ export default {
         }
     },
 
+    register: async (data: {
+        name: string;
+        username: string;
+        password: string;
+        email?: string;
+        role: 'Imam' | 'Muazzin';
+        mosque_id: string;
+        address?: string;
+    }): Promise<{ success: boolean; user?: UserWithoutPassword; error?: string }> => {
+        try {
+            const user = await apiCall('/register', {
+                method: 'POST',
+                body: JSON.stringify(data),
+            });
+            return { success: true, user };
+        } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    },
+
     getMosques: async (): Promise<Mosque[]> => {
         return apiCall('/mosques');
     },

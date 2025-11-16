@@ -5,7 +5,11 @@ import { MosqueIcon } from '../icons';
 import { InputChangeEvent } from '../utils/formHelpers';
 import dbService from '../../database/clientService';
 
-export const LoginScreen = ({ onLoginSuccess, onBackToLanding }: { onLoginSuccess: (user: UserWithoutPassword) => void, onBackToLanding: () => void }) => {
+export const LoginScreen = ({ onLoginSuccess, onBackToLanding, onGoToRegister }: { 
+    onLoginSuccess: (user: UserWithoutPassword) => void, 
+    onBackToLanding: () => void,
+    onGoToRegister: () => void 
+}) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -53,6 +57,8 @@ export const LoginScreen = ({ onLoginSuccess, onBackToLanding }: { onLoginSucces
                 </Card>
                 <div className="text-center mt-4">
                     <Button variant="link" onClick={onBackToLanding}>Back to Public View</Button>
+                    <span className="mx-2 text-gray-400">|</span>
+                    <Button variant="link" onClick={onGoToRegister}>Register</Button>
                 </div>
             </div>
         </div>

@@ -13,10 +13,16 @@ const handleClick = (e: MouseClickEvent, callback: () => void) => {
     callback();
 };
 
-export const MosquesPage = ({ mosques, onMosqueChange, onRefresh }: { mosques: Mosque[], onMosqueChange: (mosque: Mosque) => void, onRefresh: () => void }) => {
+export const MosquesPage = ({ mosques, onMosqueChange, onRefresh, userRole }: { 
+    mosques: Mosque[], 
+    onMosqueChange: (mosque: Mosque) => void, 
+    onRefresh: () => void,
+    userRole: string
+}) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingMosque, setEditingMosque] = useState<Mosque | null>(null);
-
+    
+    const isReadOnly = userRole === 'Imam'; // Imam can only view mosques
     const handleAddClick = () => {
         setEditingMosque(null);
         setIsModalOpen(true);
@@ -62,12 +68,16 @@ export const MosquesPage = ({ mosques, onMosqueChange, onRefresh }: { mosques: M
             header: 'Actions',
             accessor: item => (
                 <div className="flex space-x-2">
-                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditClick(item))}>
-                        <EditIcon className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item.id))}>
-                        <TrashIcon className="h-4 w-4 text-red-500" />
-                    </Button>
+                    {!isReadOnly && (
+                        <>
+                            <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditClick(item))}>
+                                <EditIcon className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item.id))}>
+                                <TrashIcon className="h-4 w-4 text-red-500" />
+                            </Button>
+                        </>
+                    )}
                     <Button variant="outline" size="sm" onClick={(e: MouseClickEvent) => handleClick(e, () => onMosqueChange(item))}>
                         Select
                     </Button>
@@ -80,15 +90,22 @@ export const MosquesPage = ({ mosques, onMosqueChange, onRefresh }: { mosques: M
         <div>
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Mosques</h1>
-                <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>Add Mosque</Button>
+                {!isReadOnly && <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>Add Mosque</Button>}
             </div>
+            {isReadOnly && (
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">You have read-only access to view mosques.</p>
+                </div>
+            )}
             <DataTable columns={columns} data={mosques} />
-            <MosqueFormModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                onSave={handleSave}
-                initialData={editingMosque}
-            />
+            {!isReadOnly && (
+                <MosqueFormModal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    onSave={handleSave}
+                    initialData={editingMosque}
+                />
+            )}
         </div>
     );
 };

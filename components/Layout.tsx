@@ -33,17 +33,20 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: HomeIcon },
-    { id: 'mosques', label: 'Mosques', icon: MosqueIcon },
-    { id: 'members', label: 'Members', icon: UsersIcon },
-    { id: 'prayer-times', label: 'Prayer Times', icon: ClockIcon },
-    { id: 'announcements', label: 'Announcements', icon: MegaphoneIcon },
-    { id: 'donations', label: 'Donations', icon: DollarSignIcon },
-    { id: 'events', label: 'Events', icon: CalendarIcon },
-    { id: 'audit-log', label: 'Audit Log', icon: FileTextIcon },
-    { id: 'profile', label: 'Profile', icon: UsersIcon }, // <-- Added for profile manage
+  const allNavItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: HomeIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'mosques', label: 'Mosques', icon: MosqueIcon, roles: ['Admin'] },
+    { id: 'members', label: 'Members', icon: UsersIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'prayer-times', label: 'Prayer Times', icon: ClockIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'announcements', label: 'Announcements', icon: MegaphoneIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'donations', label: 'Donations', icon: DollarSignIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'events', label: 'Events', icon: CalendarIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'audit-log', label: 'Audit Log', icon: FileTextIcon, roles: ['Admin', 'Imam'] },
+    { id: 'profile', label: 'Profile', icon: UsersIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
   ];
+  
+  // Filter navigation items based on user role
+  const navItems = allNavItems.filter(item => item.roles.includes(user.role));
   
   return (
     <div className="min-h-screen bg-background dark:bg-dark-background">
