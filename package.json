@@ -10,7 +10,8 @@
     "server": "tsx server/index.ts",
     "server:dev": "tsx watch server/index.ts",
     "setup-db": "tsx scripts/setup-pg-db.ts",
-    "create-admin": "tsx scripts/create-admin.ts"
+    "create-admin": "tsx scripts/create-admin.ts",
+    "migrate": "tsx scripts/run-migration.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
