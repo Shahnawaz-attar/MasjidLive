@@ -58,6 +58,15 @@ function App() {
         dbService.getMosques().then(data => {
             setMosques(data);
             if (data.length > 0 && !selectedMosque) {
+                // If user has a mosque_id (Imam or Muazzin), set their mosque
+                if (user && user.mosque_id) {
+                    const userMosque = data.find(m => m.id === user.mosque_id);
+                    if (userMosque) {
+                        setSelectedMosque(userMosque);
+                        return;
+                    }
+                }
+                // Otherwise set first mosque (for Admin or if mosque not found)
                 setSelectedMosque(data[0]);
             }
         });
@@ -65,7 +74,7 @@ function App() {
 
     useEffect(() => {
         fetchMosques();
-    }, []);
+    }, [user]); // Add user as dependency to re-fetch when user changes
 
     const handleAddMosque = () => {
         setIsMosqueModalOpen(true);
@@ -97,6 +106,15 @@ function App() {
         const asUser = loggedInUser as User;
         setUser(asUser);
         try { localStorage.setItem('masjid_user', JSON.stringify(asUser)); } catch {}
+        
+        // If user has a mosque_id (Imam or Muazzin), set their mosque automatically
+        if (asUser.mosque_id) {
+            const userMosque = mosques.find(m => m.id === asUser.mosque_id);
+            if (userMosque) {
+                setSelectedMosque(userMosque);
+            }
+        }
+        
         setCurrentPage('dashboard');
     };
 
