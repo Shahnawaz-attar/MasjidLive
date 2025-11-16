@@ -6,9 +6,21 @@ import pgService from '../database/pgService.ts';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 
-app.use(cors());
+// CORS configuration for production
+const corsOptions = {
+    origin: [
+        'http://localhost:5173', // Vite dev server
+        'http://localhost:3000', // Alternative dev port
+        'https://www.citymasjid.info', // Production domain
+        'https://citymasjid.info' // Alternative without www
+    ],
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' })); // Increase limit for base64 images
 
 // Health check

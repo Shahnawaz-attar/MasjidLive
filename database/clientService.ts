@@ -1,7 +1,11 @@
 // Browser-safe database client — makes HTTP calls to API server
 import { User, Mosque, Member, PrayerTime, Announcement, Donation, CommunityEvent, AuditLog, MosqueSummary, UserWithoutPassword, UserPreference } from '../types';
 
-const API_BASE_URL = (import.meta.env?.VITE_API_URL as string) || 'http://localhost:3001/api';
+// Use environment variable or fallback to localhost for development
+const API_BASE_URL = (import.meta.env?.VITE_API_URL as string) || 
+                     (typeof window !== 'undefined' && window.location.origin.includes('citymasjid.info') 
+                      ? 'https://www.citymasjid.info/api' 
+                      : 'http://localhost:3002/api');
 
 type CollectionType = {
     members: Member[];
@@ -154,6 +158,11 @@ export default {
             method: 'POST',
             body: JSON.stringify({ currentPassword, newPassword }),
         });
+    },
+
+    // Health check
+    healthCheck: async (): Promise<{ status: string }> => {
+        return apiCall('/health');
     },
 
     // User Preferences
