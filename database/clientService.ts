@@ -1,7 +1,7 @@
 // Browser-safe database client — makes HTTP calls to API server
-import { User, Mosque, Member, PrayerTime, Announcement, Donation, CommunityEvent, AuditLog, MosqueSummary, UserWithoutPassword } from '../types';
+import { User, Mosque, Member, PrayerTime, Announcement, Donation, CommunityEvent, AuditLog, MosqueSummary, UserWithoutPassword, UserPreference } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = (import.meta.env?.VITE_API_URL as string) || 'http://localhost:3001/api';
 
 type CollectionType = {
     members: Member[];
@@ -153,6 +153,22 @@ export default {
         return apiCall(`/users/${id}/change-password`, {
             method: 'POST',
             body: JSON.stringify({ currentPassword, newPassword }),
+        });
+    },
+
+    // User Preferences
+    getUserPreferences: async (userId: string, preferenceType: string = 'dashboard_layout'): Promise<UserPreference | null> => {
+        try {
+            return await apiCall(`/users/${userId}/preferences/${preferenceType}`);
+        } catch (error) {
+            return null;
+        }
+    },
+
+    saveUserPreferences: async (userId: string, preferenceType: string, preferenceData: any): Promise<UserPreference> => {
+        return apiCall(`/users/${userId}/preferences`, {
+            method: 'POST',
+            body: JSON.stringify({ preferenceType, preferenceData }),
         });
     },
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import { Mosque, User, PrayerTime, UserWithoutPassword } from './types';
 import dbService from './database/clientService';
@@ -21,8 +22,9 @@ import {
 } from './components/pages';
 
 function App() {
-    useEffect(() => {}, []);
-
+    const navigate = useNavigate();
+    const location = useLocation();
+    
     const [user, setUser] = useState<User | null>(() => {
         try {
             const raw = localStorage.getItem('masjid_user');
@@ -50,10 +52,8 @@ function App() {
         return () => { mounted = false; };
     }, [user]);
 
-    const [view, setView] = useState('landing');
     const { mosques, mutate: mutateMosques } = useMosques();
     const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
-    const [currentPage, setCurrentPage] = useState('dashboard');
     const [isMosqueModalOpen, setIsMosqueModalOpen] = useState(false);
 
     // Auto-select mosque when mosques load or user changes
@@ -118,104 +118,252 @@ function App() {
             }
         }
         
-        // Set proper initial view based on user type
-        if (asUser.role === 'Admin') {
-            setView('dashboard'); // Admin goes to dashboard, can manage all mosques
-        } else {
-            setView('dashboard'); // Other roles go to dashboard for their assigned mosque
-        }
-        
-        setCurrentPage('dashboard');
+        // Redirect to dashboard after login
+        navigate('/dashboard');
     };
 
     const handleLogout = () => {
         setUser(null);
-        setView('landing');
         setSelectedMosque(null);
-        setCurrentPage('dashboard');
         try { localStorage.removeItem('masjid_user'); } catch {}
+        navigate('/');
     };
 
-    const renderPage = () => {
-        // Default to Admin if role is not set (for backward compatibility with old users)
-        const userRole = user?.role || 'Admin';
-        
-        switch (currentPage) {
-            case 'mosques': 
-                return <MosquesPage mosques={mosques} onMosqueChange={setSelectedMosque} onRefresh={mutateMosques} userRole={userRole} />;
-            case 'dashboard': 
-                if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-                return <DashboardPage mosque={selectedMosque} />;
-            case 'members': 
-                if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-                return <MembersPage mosque={selectedMosque} userRole={userRole} />;
-            case 'prayer-times': 
-                if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-                return <PrayerTimesPage mosque={selectedMosque} />;
-            case 'announcements': 
-                if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-                return <AnnouncementsPage mosque={selectedMosque} />;
-            case 'donations': 
-                if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-                return <DonationsPage mosque={selectedMosque} />;
-            case 'events': 
-                if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-                return <EventsPage mosque={selectedMosque} />;
-            case 'audit-log': 
-                if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-                return <AuditLogPage mosque={selectedMosque} />;
-            case 'profile':
-                return <AdminProfilePage user={user!} onUserUpdate={setUser} />;
-            default: 
-                if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-                return <DashboardPage mosque={selectedMosque} />;
+    // Navigation handler for Layout component
+    const handleNavigate = (page: string) => {
+        navigate(`/${page}`);
+    };
+
+    // Get current page from URL
+    const getCurrentPage = () => {
+        const path = location.pathname.slice(1); // Remove leading slash
+        return path || 'dashboard';
+    };
+
+    const renderProtectedRoute = (element: React.ReactElement) => {
+        if (!user) {
+            return <Navigate to="/" replace />;
         }
-    }
-    
-    if (!user) {
-        if (view === 'login') {
-            return <LoginScreen 
-                onLoginSuccess={handleLogin} 
-                onBackToLanding={() => setView('landing')} 
-                onGoToRegister={() => setView('register')}
-            />;
+        return element;
+    };
+
+    const renderAdminRoute = (element: React.ReactElement) => {
+        if (!user) {
+            return <Navigate to="/" replace />;
         }
-        if (view === 'register') {
-            return <RegistrationScreen
-                mosques={mosques}
-                onRegistrationSuccess={handleLogin}
-                onBackToLogin={() => setView('login')}
-            />;
+        if (user.role !== 'Admin') {
+            return <Navigate to="/dashboard" replace />;
         }
-        return <LandingPage mosques={mosques} onGoToLogin={() => setView('login')} />;
-    }
+        return element;
+    };
 
     // Admin can access all pages without needing a selected mosque
-    const isAdmin = user.role === 'Admin';
-    if (!isAdmin && currentPage !== 'mosques' && !selectedMosque) {
-        return <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-background text-lg font-semibold text-gray-700 dark:text-gray-300">Loading mosques...</div>
-    }
-
+    const isAdmin = user?.role === 'Admin';
     const layoutMosque = selectedMosque || (mosques.length > 0 ? mosques[0] : null);
     
-    if (!isAdmin && !layoutMosque && currentPage !== 'mosques') {
-        return <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-background text-lg font-semibold text-gray-700 dark:text-gray-300">No mosques available. Please contact administrator.</div>
+    if (user && !isAdmin && !layoutMosque && getCurrentPage() !== 'mosques') {
+        return <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-background text-lg font-semibold text-gray-700 dark:text-gray-300">Loading mosques...</div>
     }
 
     return (
         <>
-            <Layout
-                user={user}
-                mosques={mosques}
-                selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
-                onMosqueChange={setSelectedMosque}
-                onNavigate={setCurrentPage}
-                currentPage={currentPage}
-                onLogout={handleLogout}
-                onAddMosque={handleAddMosque}
-            >
-                {renderPage()}
-            </Layout>
+            <Routes>
+                {/* Public routes */}
+                <Route path="/" element={
+                    user ? <Navigate to="/dashboard" replace /> : 
+                    <LandingPage mosques={mosques} onGoToLogin={() => navigate('/login')} />
+                } />
+                
+                {/* Public landing page accessible even when logged in */}
+                <Route path="/home" element={
+                    <LandingPage mosques={mosques} onGoToLogin={() => navigate('/login')} />
+                } />
+                
+                <Route path="/login" element={
+                    user ? <Navigate to="/dashboard" replace /> :
+                    <LoginScreen 
+                        onLoginSuccess={handleLogin} 
+                        onBackToLanding={() => navigate('/')} 
+                        onGoToRegister={() => navigate('/register')}
+                    />
+                } />
+                <Route path="/register" element={
+                    user ? <Navigate to="/dashboard" replace /> :
+                    <RegistrationScreen
+                        mosques={mosques}
+                        onRegistrationSuccess={handleLogin}
+                        onBackToLogin={() => navigate('/login')}
+                    />
+                } />
+
+                {/* Protected routes */}
+                <Route path="/dashboard" element={renderProtectedRoute(
+                    <Layout
+                        user={user!}
+                        mosques={mosques}
+                        selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
+                        onMosqueChange={setSelectedMosque}
+                        onNavigate={handleNavigate}
+                        currentPage={getCurrentPage()}
+                        onLogout={handleLogout}
+                        onAddMosque={handleAddMosque}
+                    >
+                        {!selectedMosque ? (
+                            <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>
+                        ) : (
+                            <DashboardPage mosque={selectedMosque} />
+                        )}
+                    </Layout>
+                )} />
+
+                <Route path="/members" element={renderProtectedRoute(
+                    <Layout
+                        user={user!}
+                        mosques={mosques}
+                        selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
+                        onMosqueChange={setSelectedMosque}
+                        onNavigate={handleNavigate}
+                        currentPage={getCurrentPage()}
+                        onLogout={handleLogout}
+                        onAddMosque={handleAddMosque}
+                    >
+                        {!selectedMosque ? (
+                            <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>
+                        ) : (
+                            <MembersPage mosque={selectedMosque} userRole={user?.role || 'Admin'} />
+                        )}
+                    </Layout>
+                )} />
+
+                <Route path="/prayer-times" element={renderProtectedRoute(
+                    <Layout
+                        user={user!}
+                        mosques={mosques}
+                        selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
+                        onMosqueChange={setSelectedMosque}
+                        onNavigate={handleNavigate}
+                        currentPage={getCurrentPage()}
+                        onLogout={handleLogout}
+                        onAddMosque={handleAddMosque}
+                    >
+                        {!selectedMosque ? (
+                            <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>
+                        ) : (
+                            <PrayerTimesPage mosque={selectedMosque} />
+                        )}
+                    </Layout>
+                )} />
+
+                <Route path="/announcements" element={renderProtectedRoute(
+                    <Layout
+                        user={user!}
+                        mosques={mosques}
+                        selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
+                        onMosqueChange={setSelectedMosque}
+                        onNavigate={handleNavigate}
+                        currentPage={getCurrentPage()}
+                        onLogout={handleLogout}
+                        onAddMosque={handleAddMosque}
+                    >
+                        {!selectedMosque ? (
+                            <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>
+                        ) : (
+                            <AnnouncementsPage mosque={selectedMosque} />
+                        )}
+                    </Layout>
+                )} />
+
+                <Route path="/donations" element={renderProtectedRoute(
+                    <Layout
+                        user={user!}
+                        mosques={mosques}
+                        selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
+                        onMosqueChange={setSelectedMosque}
+                        onNavigate={handleNavigate}
+                        currentPage={getCurrentPage()}
+                        onLogout={handleLogout}
+                        onAddMosque={handleAddMosque}
+                    >
+                        {!selectedMosque ? (
+                            <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>
+                        ) : (
+                            <DonationsPage mosque={selectedMosque} />
+                        )}
+                    </Layout>
+                )} />
+
+                <Route path="/events" element={renderProtectedRoute(
+                    <Layout
+                        user={user!}
+                        mosques={mosques}
+                        selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
+                        onMosqueChange={setSelectedMosque}
+                        onNavigate={handleNavigate}
+                        currentPage={getCurrentPage()}
+                        onLogout={handleLogout}
+                        onAddMosque={handleAddMosque}
+                    >
+                        {!selectedMosque ? (
+                            <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>
+                        ) : (
+                            <EventsPage mosque={selectedMosque} />
+                        )}
+                    </Layout>
+                )} />
+
+                <Route path="/mosques" element={renderAdminRoute(
+                    <Layout
+                        user={user!}
+                        mosques={mosques}
+                        selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
+                        onMosqueChange={setSelectedMosque}
+                        onNavigate={handleNavigate}
+                        currentPage={getCurrentPage()}
+                        onLogout={handleLogout}
+                        onAddMosque={handleAddMosque}
+                    >
+                        <MosquesPage mosques={mosques} onMosqueChange={setSelectedMosque} onRefresh={mutateMosques} userRole={user?.role || 'Admin'} />
+                    </Layout>
+                )} />
+
+                <Route path="/audit-log" element={renderProtectedRoute(
+                    <Layout
+                        user={user!}
+                        mosques={mosques}
+                        selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
+                        onMosqueChange={setSelectedMosque}
+                        onNavigate={handleNavigate}
+                        currentPage={getCurrentPage()}
+                        onLogout={handleLogout}
+                        onAddMosque={handleAddMosque}
+                    >
+                        {!selectedMosque ? (
+                            <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>
+                        ) : (
+                            <AuditLogPage mosque={selectedMosque} />
+                        )}
+                    </Layout>
+                )} />
+
+                <Route path="/profile" element={renderProtectedRoute(
+                    <Layout
+                        user={user!}
+                        mosques={mosques}
+                        selectedMosque={layoutMosque || { id: '', name: 'No Mosque', address: '', logoUrl: '' }}
+                        onMosqueChange={setSelectedMosque}
+                        onNavigate={handleNavigate}
+                        currentPage={getCurrentPage()}
+                        onLogout={handleLogout}
+                        onAddMosque={handleAddMosque}
+                    >
+                        <AdminProfilePage user={user!} onUserUpdate={setUser} />
+                    </Layout>
+                )} />
+
+                {/* Catch all route - redirect to dashboard if logged in, landing if not */}
+                <Route path="*" element={<Navigate to={user ? "/dashboard" : "/"} replace />} />
+            </Routes>
+
             <MosqueFormModal
                 isOpen={isMosqueModalOpen}
                 onClose={() => setIsMosqueModalOpen(false)}

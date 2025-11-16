@@ -126,7 +126,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
       {/* Main Content */}
       <div className="lg:pl-64">
         {/* Header */}
-        <header className="sticky top-0 z-10 bg-surface/80 dark:bg-dark-surface/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between p-4 transition-all duration-300">
+        <header className="sticky top-0 z-50 bg-surface/80 dark:bg-dark-surface/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between p-4 transition-all duration-300">
           <div className="flex items-center gap-4">
             <button 
                 onClick={() => setIsSidebarOpen(true)}
@@ -139,16 +139,11 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
             {/* Landing Page Link */}
             <button 
                 onClick={() => {
-                    if (user?.role === 'Admin') {
-                        // Admin can visit landing page in same tab
-                        window.location.href = '/';
-                    } else {
-                        // Other roles open in new tab to avoid losing session
-                        window.open('/', '_blank');
-                    }
+                    // Open landing page in new tab
+                    window.open('/home', '_blank');
                 }}
                 className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
-                title="Visit Landing Page"
+                title="View Public Landing Page"
             >
                 <ExternalLinkIcon className="h-4 w-4" />
                 <span>Home</span>

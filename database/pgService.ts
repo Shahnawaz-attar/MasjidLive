@@ -217,7 +217,7 @@ export const pgService = {
         return { id, logoUrl, ...data };
     },
 
-    updateMosque: async (id: string, data: Partial<Omit<Mosque, 'id' | 'logoUrl'>>): Promise<Mosque> => {
+    updateMosque: async (id: string, data: Partial<Omit<Mosque, 'id'>>): Promise<Mosque> => {
         const updates: string[] = [];
         const values: any[] = [];
         let paramCount = 1;
@@ -229,6 +229,10 @@ export const pgService = {
         if (data.address !== undefined) {
             updates.push(`address = $${paramCount++}`);
             values.push(data.address);
+        }
+        if (data.logoUrl !== undefined) {
+            updates.push(`logo_url = $${paramCount++}`);
+            values.push(data.logoUrl);
         }
 
         if (updates.length === 0) {

@@ -92,6 +92,34 @@ export interface Mosque {
     established?: string;
 }
 
+// User Preferences type for storing dashboard layouts and other user settings
+export interface UserPreference {
+    id: string;
+    user_id: string;
+    preference_type: 'dashboard_layout' | 'theme' | 'notifications' | 'display';
+    preference_data: any; // JSON data storing the preference
+    created_at: string;
+    updated_at: string;
+}
+
+export interface DashboardLayout {
+    layouts: { [key: string]: Layout[] };
+}
+
+// Layout type for react-grid-layout
+export interface Layout {
+    i: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    minW?: number;
+    minH?: number;
+    maxW?: number;
+    maxH?: number;
+    static?: boolean;
+}
+
 export interface MosqueSummary {
   nextPrayer: { name: string; time: string; id: string } | null; // Added id here too
   memberCount: number;

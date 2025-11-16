@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useEffect } from 'react';
 import { Mosque, PrayerTime } from '../../types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, Button, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui';
-import { MosqueIcon, ArrowRightIcon, CalendarIcon, EmailIcon, PhoneIcon } from '../icons';
+import { MosqueIcon, ArrowRightIcon, CalendarIcon, EmailIcon, PhoneIcon, UsersIcon } from '../icons';
 import { useMembers, useEvents, usePrayerTimes } from '../../hooks/useData';
 
 // Skeleton component for loading states
@@ -46,6 +46,9 @@ export const LandingPage = ({ mosques, onGoToLogin }: { mosques: Mosque[], onGoT
     }, [prayerTimes]);
 
     const selectedMosque = mosques.find(m => m.id === selectedId);
+
+    const upcomingEventsCount = events.length;
+    const nextEvent = events.length > 0 ? events[0]?.title : null;
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 dark:from-dark-background dark:to-primary/10">
@@ -103,106 +106,140 @@ export const LandingPage = ({ mosques, onGoToLogin }: { mosques: Mosque[], onGoT
                     <div className="max-w-6xl mx-auto space-y-6">
                         {/* Mosque header */}
                         {isLoading && !selectedMosque ? (
-                            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-8 border border-primary/20 shadow-lg">
-                                <div className="flex items-start gap-6">
-                                    <Skeleton className="h-20 w-20 rounded-lg" />
-                                    <div className="flex-1 space-y-3">
-                                        <Skeleton className="h-10 w-2/3" />
-                                        <Skeleton className="h-6 w-1/2" />
-                                        <Skeleton className="h-16 w-64 rounded-lg" />
+                            <div className="bg-gradient-to-br from-primary/15 via-primary/8 to-transparent rounded-2xl p-8 border border-primary/20 shadow-xl backdrop-blur-sm">
+                                <div className="flex flex-col lg:flex-row items-center gap-8">
+                                    <Skeleton className="h-32 w-32 lg:h-40 lg:w-40 rounded-2xl shadow-lg" />
+                                    <div className="flex-1 space-y-4 text-center lg:text-left">
+                                        <Skeleton className="h-12 w-2/3 mx-auto lg:mx-0" />
+                                        <Skeleton className="h-6 w-1/2 mx-auto lg:mx-0" />
+                                        <Skeleton className="h-20 w-80 mx-auto lg:mx-0 rounded-xl" />
                                     </div>
                                 </div>
                             </div>
                         ) : selectedMosque && (
-                            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-8 border border-primary/20 shadow-lg">
-                                <div className="flex items-start gap-6">
-                                    <img src={selectedMosque.logoUrl} alt={selectedMosque.name} className="h-20 w-20 rounded-lg shadow-md" />
-                                    <div className="flex-1">
-                                        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">{selectedMosque.name}</h1>
-                                        <p className="text-gray-600 dark:text-gray-300 flex items-center gap-2 text-lg mb-4">
-                                            <span>📍</span>
-                                            <span>{selectedMosque.address}</span>
-                                        </p>
+                            <div className="relative bg-gradient-to-br from-primary/15 via-primary/8 to-transparent rounded-2xl p-8 border border-primary/20 shadow-xl backdrop-blur-sm overflow-hidden">
+                                {/* Background Pattern */}
+                                <div className="absolute inset-0 opacity-5">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-primary rounded-full transform translate-x-32 -translate-y-32"></div>
+                                    <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary rounded-full transform -translate-x-24 translate-y-24"></div>
+                                </div>
+                                
+                                <div className="relative z-10 flex flex-col lg:flex-row items-center gap-8">
+                                    {/* Mosque Image - Much Larger and More Prominent */}
+                                    <div className="relative group">
+                                        <div className="absolute -inset-1 bg-gradient-to-r from-primary to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
+                                        <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-2xl">
+                                            <img 
+                                                src={selectedMosque.logoUrl} 
+                                                alt={selectedMosque.name} 
+                                                className="h-32 w-32 lg:h-40 lg:w-40 rounded-xl object-cover shadow-lg transform group-hover:scale-105 transition duration-300" 
+                                            />
+                                        </div>
+                                        {/* Decorative Islamic Pattern */}
+                                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-primary rounded-full opacity-60 animate-pulse"></div>
+                                        <div className="absolute -bottom-2 -left-2 w-6 h-6 bg-blue-500 rounded-full opacity-60 animate-pulse delay-300"></div>
+                                    </div>
+                                    
+                                    {/* Mosque Information */}
+                                    <div className="flex-1 text-center lg:text-left">
+                                        <div className="mb-6">
+                                            <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">
+                                                {selectedMosque.name}
+                                            </h1>
+                                            <div className="flex items-center justify-center lg:justify-start gap-3 text-lg text-gray-600 dark:text-gray-300 mb-6">
+                                                <span className="text-2xl">📍</span>
+                                                <span className="font-medium">{selectedMosque.address}</span>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Next Prayer Highlight */}
                                         {nextPrayer && (
-                                            <div className="inline-flex items-center gap-3 bg-white/80 dark:bg-gray-800/80 px-6 py-3 rounded-lg shadow-sm border border-primary/20">
-                                                <span className="text-2xl">⏰</span>
+                                            <div className="inline-flex items-center gap-4 bg-gradient-to-r from-white/90 to-white/70 dark:from-gray-800/90 dark:to-gray-800/70 px-8 py-4 rounded-xl shadow-lg border border-primary/30 backdrop-blur-sm">
+                                                <div className="relative">
+                                                    <span className="text-3xl">⏰</span>
+                                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
+                                                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full"></div>
+                                                </div>
                                                 <div>
-                                                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Next Prayer</p>
-                                                    <p className="text-xl font-bold text-gray-900 dark:text-white">
-                                                        {nextPrayer.name} <span className="text-primary">at {nextPrayer.time}</span>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 font-semibold uppercase tracking-wider">Next Prayer</p>
+                                                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                                                        {nextPrayer.name} 
+                                                        <span className="text-primary ml-2 font-black">
+                                                            {nextPrayer.time}
+                                                        </span>
                                                     </p>
                                                 </div>
                                             </div>
                                         )}
+                                        
+                                        {/* Quick Stats */}
+                                        <div className="mt-8 flex flex-wrap justify-center lg:justify-start gap-4">
+                                            <div className="bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-lg backdrop-blur-sm border border-primary/20">
+                                                <div className="text-2xl font-bold text-primary">{members.length}</div>
+                                                <div className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider">Members</div>
+                                            </div>
+                                            <div className="bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-lg backdrop-blur-sm border border-green-500/20">
+                                                <div className="text-2xl font-bold text-green-600">{events.length}</div>
+                                                <div className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider">Events</div>
+                                            </div>
+                                            <div className="bg-white/60 dark:bg-gray-800/60 px-4 py-2 rounded-lg backdrop-blur-sm border border-blue-500/20">
+                                                <div className="text-2xl font-bold text-blue-600">{prayerTimes.length}</div>
+                                                <div className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider">Prayers</div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         )}
-                        
-                        {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {isLoading ? (
-                                <>
-                                    {[1, 2, 3].map(i => (
-                                        <Card key={i} className="border-l-4 border-l-gray-300">
-                                            <CardHeader>
-                                                <Skeleton className="h-6 w-32 mb-2" />
-                                                <Skeleton className="h-4 w-40" />
-                                            </CardHeader>
-                                            <CardContent>
-                                                <Skeleton className="h-12 w-20 mb-2" />
-                                                <Skeleton className="h-4 w-32" />
-                                            </CardContent>
-                                        </Card>
-                                    ))}
-                                </>
-                            ) : (
-                                <>
-                                    <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-primary">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2">
-                                                <span className="text-2xl">👥</span>
-                                                Members
-                                            </CardTitle>
-                                            <CardDescription>Active community members</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="text-4xl font-bold text-primary">{members.length}</div>
-                                            <p className="text-sm text-gray-500 mt-2">Serving the community</p>
-                                        </CardContent>
-                                    </Card>
 
-                                    <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-green-500">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2">
-                                                <span className="text-2xl">📅</span>
-                                                Upcoming Events
-                                            </CardTitle>
-                                            <CardDescription>Community gatherings</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="text-4xl font-bold text-green-600 dark:text-green-500">{events.length}</div>
-                                            <p className="text-sm text-gray-500 mt-2 truncate">
-                                                {events.length > 0 ? `Next: ${events[0]?.title}` : 'No events scheduled'}
-                                            </p>
-                                        </CardContent>
-                                    </Card>
+                        {/* Stats cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Members Card */}
+                            <div className="group relative bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-8 border border-blue-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/20 to-indigo-500/20 rounded-bl-full"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="p-4 bg-blue-500 text-white rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                            <UsersIcon className="h-8 w-8" />
+                                        </div>
+                                        <span className="text-4xl font-black text-blue-600 dark:text-blue-400">{members.length}</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Members</h3>
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">Active community members serving the ummah</p>
+                                </div>
+                            </div>
 
-                                    <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2">
-                                                <span className="text-2xl">🕌</span>
-                                                Prayer Times
-                                            </CardTitle>
-                                            <CardDescription>Daily salah schedule</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="text-4xl font-bold text-blue-600 dark:text-blue-500">{prayerTimes.length}</div>
-                                            <p className="text-sm text-gray-500 mt-2">Daily prayers</p>
-                                        </CardContent>
-                                    </Card>
-                                </>
-                            )}
+                            {/* Events Card */}
+                            <div className="group relative bg-gradient-to-br from-green-50 to-emerald-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-8 border border-green-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-400/20 to-emerald-500/20 rounded-bl-full"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="p-4 bg-green-500 text-white rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                            <CalendarIcon className="h-8 w-8" />
+                                        </div>
+                                        <span className="text-4xl font-black text-green-600 dark:text-green-400">{upcomingEventsCount}</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Upcoming Events</h3>
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                                        {nextEvent ? `Next: ${nextEvent}` : 'Community gatherings and activities'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Prayer Times Card */}
+                            <div className="group relative bg-gradient-to-br from-amber-50 to-orange-100 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-8 border border-amber-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-bl-full"></div>
+                                <div className="relative z-10">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="p-4 bg-amber-500 text-white rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                            <span className="text-2xl">🕌</span>
+                                        </div>
+                                        <span className="text-4xl font-black text-amber-600 dark:text-amber-400">{prayerTimes.length}</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Prayer Times</h3>
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">Daily salah schedule and timings</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
