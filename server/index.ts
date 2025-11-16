@@ -31,6 +31,41 @@ app.post('/api/login', async (req: Request, res: Response) => {
     }
 });
 
+// Register
+app.post('/api/register', async (req: Request, res: Response) => {
+    try {
+        const { name, username, password, email, role, mosque_id, address } = req.body;
+        
+        // Validate required fields
+        if (!name || !username || !password || !role || !mosque_id) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        // Only allow Imam and Muazzin roles for registration
+        if (role !== 'Imam' && role !== 'Muazzin') {
+            return res.status(400).json({ error: 'Invalid role. Only Imam and Muazzin can register.' });
+        }
+
+        const result = await pgService.register({
+            name,
+            username,
+            password,
+            email,
+            role,
+            mosque_id,
+            address
+        });
+
+        if (result.success && result.user) {
+            res.json(result.user);
+        } else {
+            res.status(400).json({ error: result.error || 'Registration failed' });
+        }
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get mosques
 app.get('/api/mosques', async (_req: Request, res: Response) => {
     try {

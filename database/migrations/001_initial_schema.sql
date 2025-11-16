@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS members (
     photo TEXT,
     contact TEXT,
     background TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS prayer_times (
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS announcements (
     body TEXT NOT NULL,
     audience TEXT CHECK(audience IN ('All', 'Members only')),
     date TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS donations (
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS donations (
     donor_name TEXT NOT NULL,
     purpose TEXT NOT NULL,
     date TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS community_events (
@@ -62,17 +62,17 @@ CREATE TABLE IF NOT EXISTS community_events (
     type TEXT CHECK(type IN ('Event', 'Iftari Slot')),
     capacity INTEGER,
     booked INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS audit_logs (
     id TEXT PRIMARY KEY,
     mosque_id TEXT NOT NULL REFERENCES mosques(id),
-    user TEXT NOT NULL,
+    user_name TEXT NOT NULL,
     action TEXT NOT NULL,
     details TEXT NOT NULL,
     date TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Down

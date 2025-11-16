@@ -1,12 +1,17 @@
 export type UserWithoutPassword = Omit<User, 'password_hash'>;
 
+export type UserRole = 'Admin' | 'Imam' | 'Muazzin';
+
 export interface User {
     id: string;
     name: string;
-    email: string;
+    email?: string;
+    username: string;
     avatar?: string;
     password_hash: string;
+    role?: UserRole; // Optional for backward compatibility with existing users
     mosque_id?: string;
+    address?: string;
 }
 
 export type MemberRole = 'Imam' | 'Muazzin' | 'Committee' | 'Volunteer';
@@ -21,6 +26,7 @@ export interface Member {
   contact: string;
   background: string;
   education?: MemberEducation;
+  userId?: string; // Link to User table - if set, this member is a system user and cannot be edited
 }
 
 export interface PrayerTime {

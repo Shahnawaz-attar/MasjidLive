@@ -24,8 +24,8 @@ async function setupDatabase() {
         const testResult = await pool.query('SELECT NOW()');
         console.log('✓ Connected to database at:', testResult.rows[0].now);
         
-        // Read and execute schema
-        const schemaPath = join(__dirname, '../database/migrations/pg_schema.sql');
+        // Read and execute schema from 001_initial_schema.sql
+        const schemaPath = join(__dirname, '../database/migrations/001_initial_schema.sql');
         const schema = readFileSync(schemaPath, 'utf-8');
         
         // Remove comments and split by semicolons, but handle multi-line statements properly

@@ -61,134 +61,219 @@ export const LandingPage = ({ mosques, onGoToLogin }: { mosques: Mosque[], onGoT
     const selectedMosque = mosques.find(m => m.id === selectedId);
 
     return (
-        <div className="min-h-screen bg-background dark:bg-dark-background">
-            <header className="p-4 border-b dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+        <div className="min-h-screen bg-gradient-to-b from-background to-primary/5 dark:from-dark-background dark:to-primary/10">
+            <header className="bg-white/80 dark:bg-dark-surface/80 backdrop-blur-sm p-4 border-b dark:border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 shadow-sm">
                 <div className="flex items-center space-x-3">
                     <MosqueIcon className="h-8 w-8 text-primary"/>
-                    <h1 className="text-xl font-bold">Masjid Manager</h1>
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Masjid Manager</h1>
                 </div>
                 <div className="flex items-center space-x-3 w-full md:w-auto">
-                    <Select className="h-10 rounded-md border px-3" value={selectedId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedId(e.target.value)}>
-                        {mosques.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </Select>
-                    <Button onClick={onGoToLogin}>Admin Login <ArrowRightIcon className="ml-2 h-4 w-4"/></Button>
+                    {mosques.length > 0 && (
+                        <Select className="h-10 rounded-md border border-gray-300 dark:border-gray-600 px-3 bg-white dark:bg-gray-800 min-w-[200px]" value={selectedId ?? ''} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedId(e.target.value)}>
+                            {mosques.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        </Select>
+                    )}
+                    <Button onClick={onGoToLogin} className="whitespace-nowrap">Admin Login <ArrowRightIcon className="ml-2 h-4 w-4"/></Button>
                 </div>
             </header>
 
             <main className="p-4 sm:p-8">
-                <div className="text-center max-w-3xl mx-auto mb-6">
-                    <h2 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl">Welcome to Our Community of Mosques</h2>
-                    <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-400">Select a mosque from the dropdown to view public widgets for that mosque.</p>
+                <div className="text-center max-w-3xl mx-auto mb-8">
+                    <h2 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl mb-4">Welcome to Our Community of Mosques</h2>
+                    <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-400">
+                        {mosques.length > 0 
+                            ? "Select a mosque from the dropdown to view public information including prayer times, upcoming events, and community members."
+                            : "No mosques have been added yet. Please contact the administrator to add mosques to the system."
+                        }
+                    </p>
                 </div>
 
-                {selectedId && (
-                    <div className="max-w-5xl mx-auto space-y-6">
-                        {selectedMosque && (
-                            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-lg p-6 border border-primary/10">
-                                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">{selectedMosque.name}</h1>
-                                <p className="text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                                    <span>📍 {selectedMosque.address}</span>
+                {mosques.length === 0 ? (
+                    <div className="max-w-2xl mx-auto">
+                        <Card className="border-2 border-dashed border-gray-300 dark:border-gray-700 bg-white/50 dark:bg-dark-surface/50">
+                            <CardContent className="pt-12 pb-12 text-center">
+                                <MosqueIcon className="h-16 w-16 text-gray-400 mx-auto mb-4"/>
+                                <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">No Mosques Available</h3>
+                                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                                    The system is ready, but no mosques have been registered yet.
                                 </p>
-                                {nextPrayer && (
-                                    <p className="text-lg font-semibold text-primary mt-3 flex items-center gap-2">
-                                        ⏰ Next Prayer: <span className="text-gray-900 dark:text-white">{nextPrayer.name}</span> at <span className="font-bold">{nextPrayer.time}</span>
-                                    </p>
-                                )}
+                                <Button onClick={onGoToLogin} variant="outline">
+                                    Login as Admin to Add Mosques
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                ) : selectedId && (
+                    <div className="max-w-6xl mx-auto space-y-6">
+                        {selectedMosque && (
+                            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-8 border border-primary/20 shadow-lg">
+                                <div className="flex items-start gap-6">
+                                    <img src={selectedMosque.logoUrl} alt={selectedMosque.name} className="h-20 w-20 rounded-lg shadow-md" />
+                                    <div className="flex-1">
+                                        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">{selectedMosque.name}</h1>
+                                        <p className="text-gray-600 dark:text-gray-300 flex items-center gap-2 text-lg mb-4">
+                                            <span>📍</span>
+                                            <span>{selectedMosque.address}</span>
+                                        </p>
+                                        {nextPrayer && (
+                                            <div className="inline-flex items-center gap-3 bg-white/80 dark:bg-gray-800/80 px-6 py-3 rounded-lg shadow-sm border border-primary/20">
+                                                <span className="text-2xl">⏰</span>
+                                                <div>
+                                                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Next Prayer</p>
+                                                    <p className="text-xl font-bold text-gray-900 dark:text-white">
+                                                        {nextPrayer.name} <span className="text-primary">at {nextPrayer.time}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         )}
                         
-                        {nextPrayer && (
-                            <Card className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-2 border-primary/20 shadow-lg">
-                                <CardContent className="pt-6">
-                                    <div className="text-center">
-                                        <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Next Prayer</p>
-                                        <div className="flex items-center justify-center gap-3 mb-2">
-                                            <span className="text-4xl">⏰</span>
-                                            <div>
-                                                <p className="text-3xl font-bold text-gray-900 dark:text-white">{nextPrayer.name}</p>
-                                                <p className="text-2xl font-bold text-primary mt-1">{nextPrayer.time}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                            <Card>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-primary">
                                 <CardHeader>
-                                    <CardTitle>Members</CardTitle>
-                                    <CardDescription>Total active members</CardDescription>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <span className="text-2xl">👥</span>
+                                        Members
+                                    </CardTitle>
+                                    <CardDescription>Active community members</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-bold">{members.length}</div>
-                                    <p className="text-xs text-gray-500">Most recent members shown below</p>
+                                    <div className="text-4xl font-bold text-primary">{members.length}</div>
+                                    <p className="text-sm text-gray-500 mt-2">Serving the community</p>
                                 </CardContent>
                             </Card>
 
-                            <Card>
+                            <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-green-500">
                                 <CardHeader>
-                                    <CardTitle>Upcoming Events</CardTitle>
-                                    <CardDescription>Next events</CardDescription>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <span className="text-2xl">📅</span>
+                                        Upcoming Events
+                                    </CardTitle>
+                                    <CardDescription>Community gatherings</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-3xl font-bold">{events.length}</div>
-                                    <p className="text-xs text-gray-500">Next: {events[0]?.title ?? '—'}</p>
+                                    <div className="text-4xl font-bold text-green-600 dark:text-green-500">{events.length}</div>
+                                    <p className="text-sm text-gray-500 mt-2 truncate">
+                                        {events.length > 0 ? `Next: ${events[0]?.title}` : 'No events scheduled'}
+                                    </p>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="hover:shadow-lg transition-shadow border-l-4 border-l-blue-500">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <span className="text-2xl">🕌</span>
+                                        Prayer Times
+                                    </CardTitle>
+                                    <CardDescription>Daily salah schedule</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="text-4xl font-bold text-blue-600 dark:text-blue-500">{prayerTimes.length}</div>
+                                    <p className="text-sm text-gray-500 mt-2">Daily prayers</p>
                                 </CardContent>
                             </Card>
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="lg:col-span-2">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Upcoming Events</CardTitle>
+                            <div className="lg:col-span-2 space-y-6">
+                                <Card className="shadow-md">
+                                    <CardHeader className="bg-gradient-to-r from-green-50 to-transparent dark:from-green-900/20">
+                                        <CardTitle className="flex items-center gap-2">
+                                            <CalendarIcon className="h-5 w-5 text-green-600"/>
+                                            Upcoming Events
+                                        </CardTitle>
                                     </CardHeader>
-                                    <CardContent>
-                                        {events.length ? events.slice(0,5).map(ev => (
-                                            <div key={ev.id} className="p-2 border-b last:border-b-0">
-                                                <div className="font-semibold">{ev.title}</div>
-                                                <div className="text-xs text-gray-500">{ev.date} • {ev.type}</div>
+                                    <CardContent className="pt-6">
+                                        {events.length ? (
+                                            <div className="space-y-3">
+                                                {events.slice(0,5).map(ev => (
+                                                    <div key={ev.id} className="p-4 bg-gradient-to-r from-green-50/50 to-transparent dark:from-green-900/10 rounded-lg border border-green-100 dark:border-green-900/30 hover:shadow-sm transition-shadow">
+                                                        <div className="font-semibold text-gray-900 dark:text-white text-lg">{ev.title}</div>
+                                                        <div className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2 mt-1">
+                                                            <span>📅 {ev.date}</span>
+                                                            <span>•</span>
+                                                            <span className="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 rounded text-xs font-medium">{ev.type}</span>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        )) : <p className="text-sm text-gray-500">No upcoming events.</p>}
+                                        ) : (
+                                            <div className="text-center py-8 text-gray-500">
+                                                <CalendarIcon className="h-12 w-12 mx-auto mb-3 opacity-30"/>
+                                                <p>No upcoming events scheduled.</p>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
 
-                                <Card className="mt-6">
-                                    <CardHeader>
-                                        <CardTitle>Recent Members</CardTitle>
+                                <Card className="shadow-md">
+                                    <CardHeader className="bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-900/20">
+                                        <CardTitle className="flex items-center gap-2">
+                                            <span className="text-xl">👥</span>
+                                            Community Members
+                                        </CardTitle>
                                     </CardHeader>
-                                    <CardContent>
-                                        {members.length ? members.slice(0,6).map(mb => (
-                                            <div key={mb.id} className="p-2 border-b last:border-b-0 flex items-center space-x-3">
-                                                <img src={mb.photo} className="h-10 w-10 rounded-full" alt={mb.name} />
-                                                <div>
-                                                    <div className="font-semibold">{mb.name}</div>
-                                                    <div className="text-xs text-gray-500">{mb.role}</div>
-                                                </div>
+                                    <CardContent className="pt-6">
+                                        {members.length ? (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                {members.slice(0,6).map(mb => (
+                                                    <div key={mb.id} className="p-3 bg-gradient-to-r from-blue-50/50 to-transparent dark:from-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30 flex items-center space-x-3 hover:shadow-sm transition-shadow">
+                                                        <img src={mb.photo} className="h-12 w-12 rounded-full ring-2 ring-primary/20" alt={mb.name} />
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="font-semibold text-gray-900 dark:text-white truncate">{mb.name}</div>
+                                                            <div className="text-sm text-gray-600 dark:text-gray-400">{mb.role}</div>
+                                                        </div>
+                                                    </div>
+                                                ))}
                                             </div>
-                                        )) : <p className="text-sm text-gray-500">No members found.</p>}
+                                        ) : (
+                                            <div className="text-center py-8 text-gray-500">
+                                                <span className="text-4xl mb-3 block opacity-30">👥</span>
+                                                <p>No members listed yet.</p>
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
                             </div>
 
                             <div>
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle>Prayer Times</CardTitle>
+                                <Card className="shadow-md sticky top-4">
+                                    <CardHeader className="bg-gradient-to-r from-primary/10 to-transparent">
+                                        <CardTitle className="flex items-center gap-2">
+                                            <span className="text-xl">🕌</span>
+                                            Prayer Times
+                                        </CardTitle>
+                                        <CardDescription>Today's schedule</CardDescription>
                                     </CardHeader>
-                                    <CardContent>
+                                    <CardContent className="pt-6">
                                         {prayerTimes.length ? (
-                                            <ul className="space-y-2">
-                                                {prayerTimes.map(pt => (
-                                                    <li key={pt.id} className="flex justify-between">
-                                                        <span>{pt.name}</span>
-                                                        <span className="font-semibold">{pt.time}</span>
-                                                    </li>
-                                                ))}
+                                            <ul className="space-y-3">
+                                                {prayerTimes.map(pt => {
+                                                    const isNext = nextPrayer?.id === pt.id;
+                                                    return (
+                                                        <li key={pt.id} className={`flex justify-between items-center p-3 rounded-lg transition-all ${
+                                                            isNext 
+                                                                ? 'bg-primary/10 border border-primary/30 shadow-sm' 
+                                                                : 'hover:bg-gray-50 dark:hover:bg-gray-800'
+                                                        }`}>
+                                                            <span className={`font-medium ${isNext ? 'text-primary' : 'text-gray-700 dark:text-gray-300'}`}>
+                                                                {pt.name}
+                                                            </span>
+                                                            <span className={`font-bold ${isNext ? 'text-primary text-lg' : 'text-gray-900 dark:text-white'}`}>
+                                                                {pt.time}
+                                                            </span>
+                                                        </li>
+                                                    );
+                                                })}
                                             </ul>
                                         ) : (
-                                            <p className="text-sm text-gray-500">No prayer times set.</p>
+                                            <div className="text-center py-8 text-gray-500">
+                                                <span className="text-4xl mb-3 block opacity-30">🕌</span>
+                                                <p>No prayer times set.</p>
+                                            </div>
                                         )}
                                     </CardContent>
                                 </Card>

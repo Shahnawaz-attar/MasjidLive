@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import { Mosque, User, PrayerTime, UserWithoutPassword } from './types';
 import dbService from './database/clientService';
 import { MosqueFormModal } from './components/forms';
+import { useMosques } from './hooks/useData';
 import {
     DashboardPage,
     MembersPage,
@@ -13,6 +14,7 @@ import {
     MosquesPage,
     AuditLogPage,
     LoginScreen,
+    RegistrationScreen,
     LandingPage,
     AdminProfilePage
 } from './components/pages';
@@ -48,30 +50,32 @@ function App() {
     }, [user]);
 
     const [view, setView] = useState('landing');
-    const [mosques, setMosques] = useState<Mosque[]>([]);
+    const { mosques, mutate: mutateMosques } = useMosques();
     const [selectedMosque, setSelectedMosque] = useState<Mosque | null>(null);
     const [currentPage, setCurrentPage] = useState('dashboard');
     const [isMosqueModalOpen, setIsMosqueModalOpen] = useState(false);
 
-    const fetchMosques = () => {
-        dbService.getMosques().then(data => {
-            setMosques(data);
-            if (data.length > 0 && !selectedMosque) {
-                setSelectedMosque(data[0]);
-            }
-        });
-    };
-
+    // Auto-select mosque when mosques load or user changes
     useEffect(() => {
-        fetchMosques();
-    }, []);
-
+        if (mosques.length > 0 && !selectedMosque) {
+            // If user has a mosque_id (Imam or Muazzin), set their mosque
+            if (user && user.mosque_id) {
+                const userMosque = mosques.find(m => m.id === user.mosque_id);
+                if (userMosque) {
+                    setSelectedMosque(userMosque);
+                    return;
+                }
+            }
+            // Otherwise set first mosque (for Admin or if mosque not found)
+            setSelectedMosque(mosques[0]);
+        }
+    }, [mosques, user, selectedMosque]);
     const handleAddMosque = () => {
         setIsMosqueModalOpen(true);
     };
 
     const handleMosqueCreated = async (newMosque: Mosque) => {
-        setMosques([...mosques, newMosque]);
+        await mutateMosques(); // Revalidate mosques list
         setSelectedMosque(newMosque);
         
         // Initialize default prayer times for the new mosque
@@ -96,6 +100,15 @@ function App() {
         const asUser = loggedInUser as User;
         setUser(asUser);
         try { localStorage.setItem('masjid_user', JSON.stringify(asUser)); } catch {}
+        
+        // If user has a mosque_id (Imam or Muazzin), set their mosque automatically
+        if (asUser.mosque_id) {
+            const userMosque = mosques.find(m => m.id === asUser.mosque_id);
+            if (userMosque) {
+                setSelectedMosque(userMosque);
+            }
+        }
+        
         setCurrentPage('dashboard');
     };
 
@@ -107,15 +120,18 @@ function App() {
     };
 
     const renderPage = () => {
+        // Default to Admin if role is not set (for backward compatibility with old users)
+        const userRole = user?.role || 'Admin';
+        
         switch (currentPage) {
             case 'mosques': 
-                return <MosquesPage mosques={mosques} onMosqueChange={setSelectedMosque} onRefresh={fetchMosques} />;
+                return <MosquesPage mosques={mosques} onMosqueChange={setSelectedMosque} onRefresh={mutateMosques} userRole={userRole} />;
             case 'dashboard': 
                 if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
                 return <DashboardPage mosque={selectedMosque} />;
             case 'members': 
                 if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
-                return <MembersPage mosque={selectedMosque} />;
+                return <MembersPage mosque={selectedMosque} userRole={userRole} />;
             case 'prayer-times': 
                 if (!selectedMosque) return <div className="text-center p-8 text-gray-700 dark:text-gray-300">Select a mosque to begin.</div>;
                 return <PrayerTimesPage mosque={selectedMosque} />;
@@ -141,7 +157,18 @@ function App() {
     
     if (!user) {
         if (view === 'login') {
-            return <LoginScreen onLoginSuccess={handleLogin} onBackToLanding={() => setView('landing')} />;
+            return <LoginScreen 
+                onLoginSuccess={handleLogin} 
+                onBackToLanding={() => setView('landing')} 
+                onGoToRegister={() => setView('register')}
+            />;
+        }
+        if (view === 'register') {
+            return <RegistrationScreen
+                mosques={mosques}
+                onRegistrationSuccess={handleLogin}
+                onBackToLogin={() => setView('login')}
+            />;
         }
         return <LandingPage mosques={mosques} onGoToLogin={() => setView('login')} />;
     }

@@ -33,17 +33,22 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: HomeIcon },
-    { id: 'mosques', label: 'Mosques', icon: MosqueIcon },
-    { id: 'members', label: 'Members', icon: UsersIcon },
-    { id: 'prayer-times', label: 'Prayer Times', icon: ClockIcon },
-    { id: 'announcements', label: 'Announcements', icon: MegaphoneIcon },
-    { id: 'donations', label: 'Donations', icon: DollarSignIcon },
-    { id: 'events', label: 'Events', icon: CalendarIcon },
-    { id: 'audit-log', label: 'Audit Log', icon: FileTextIcon },
-    { id: 'profile', label: 'Profile', icon: UsersIcon }, // <-- Added for profile manage
+  const allNavItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: HomeIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'mosques', label: 'Mosques', icon: MosqueIcon, roles: ['Admin'] },
+    { id: 'members', label: 'Members', icon: UsersIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'prayer-times', label: 'Prayer Times', icon: ClockIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'announcements', label: 'Announcements', icon: MegaphoneIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'donations', label: 'Donations', icon: DollarSignIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'events', label: 'Events', icon: CalendarIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
+    { id: 'audit-log', label: 'Audit Log', icon: FileTextIcon, roles: ['Admin', 'Imam'] },
+    { id: 'profile', label: 'Profile', icon: UsersIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
   ];
+  
+  // Filter navigation items based on user role
+  // Default to Admin if role is not set (for backward compatibility)
+  const userRole = user.role || 'Admin';
+  const navItems = allNavItems.filter(item => item.roles.includes(userRole));
   
   return (
     <div className="min-h-screen bg-background dark:bg-dark-background">
@@ -115,52 +120,66 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
           <div className="flex-1 lg:hidden"></div>
 
           <div className="relative">
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <img src={selectedMosque.logoUrl} alt={selectedMosque.name} className="h-8 w-8 rounded-md" />
-              <div>
-                <h2 className="text-lg font-bold">{selectedMosque.name}</h2>
-                <p className="text-xs text-gray-500 hidden sm:block">{selectedMosque.address}</p>
-              </div>
-              <ChevronDownIcon className={`h-5 w-5 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            {dropdownOpen && (
-              <div className="absolute mt-2 w-72 bg-surface dark:bg-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 right-0">
-                {mosques.map(mosque => (
-                  <button
-                    key={mosque.id}
-                    onClick={() => {
-                      onMosqueChange(mosque);
-                      setDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center space-x-3"
-                  >
-                    <img src={mosque.logoUrl} alt={mosque.name} className="h-8 w-8 rounded-md" />
-                    <div>
-                        <p className="font-semibold">{mosque.name}</p>
-                        <p className="text-xs text-gray-500">{mosque.address}</p>
-                    </div>
-                  </button>
-                ))}
-                {onAddMosque && (
-                  <button
-                    onClick={() => {
-                      onAddMosque();
-                      setDropdownOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center space-x-3 border-t border-gray-200 dark:border-gray-700 mt-2 pt-2"
-                  >
-                    <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
-                      <PlusIcon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                        <p className="font-semibold text-primary">Add New Mosque</p>
-                        <p className="text-xs text-gray-500">Create a new masjid</p>
-                    </div>
-                  </button>
+            {/* Only show dropdown for Admin users (or users without role for backward compatibility) */}
+            {(!user.role || user.role === 'Admin') ? (
+              <>
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <img src={selectedMosque.logoUrl} alt={selectedMosque.name} className="h-8 w-8 rounded-md" />
+                  <div>
+                    <h2 className="text-lg font-bold">{selectedMosque.name}</h2>
+                    <p className="text-xs text-gray-500 hidden sm:block">{selectedMosque.address}</p>
+                  </div>
+                  <ChevronDownIcon className={`h-5 w-5 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute mt-2 w-72 bg-surface dark:bg-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 right-0">
+                    {mosques.map(mosque => (
+                      <button
+                        key={mosque.id}
+                        onClick={() => {
+                          onMosqueChange(mosque);
+                          setDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center space-x-3"
+                      >
+                        <img src={mosque.logoUrl} alt={mosque.name} className="h-8 w-8 rounded-md" />
+                        <div>
+                            <p className="font-semibold">{mosque.name}</p>
+                            <p className="text-xs text-gray-500">{mosque.address}</p>
+                        </div>
+                      </button>
+                    ))}
+                    {onAddMosque && (
+                      <button
+                        onClick={() => {
+                          onAddMosque();
+                          setDropdownOpen(false);
+                        }}
+                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center space-x-3 border-t border-gray-200 dark:border-gray-700 mt-2 pt-2"
+                      >
+                        <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                          <PlusIcon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                            <p className="font-semibold text-primary">Add New Mosque</p>
+                            <p className="text-xs text-gray-500">Create a new masjid</p>
+                        </div>
+                      </button>
+                    )}
+                  </div>
                 )}
+              </>
+            ) : (
+              /* For Imam and Muazzin, just show their mosque name without dropdown */
+              <div className="flex items-center space-x-2 p-2">
+                <img src={selectedMosque.logoUrl} alt={selectedMosque.name} className="h-8 w-8 rounded-md" />
+                <div>
+                  <h2 className="text-lg font-bold">{selectedMosque.name}</h2>
+                  <p className="text-xs text-gray-500 hidden sm:block">{selectedMosque.address}</p>
+                </div>
               </div>
             )}
           </div>

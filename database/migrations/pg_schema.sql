@@ -11,10 +11,13 @@ CREATE TABLE IF NOT EXISTS mosques (
 CREATE TABLE IF NOT EXISTS "users" (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
+    email TEXT,
+    username TEXT UNIQUE NOT NULL,
     avatar TEXT,
     password_hash TEXT NOT NULL,
-    mosque_id TEXT REFERENCES mosques(id)
+    role TEXT CHECK(role IN ('Admin', 'Imam', 'Muazzin')) DEFAULT 'Muazzin',
+    mosque_id TEXT REFERENCES mosques(id),
+    address TEXT
 );
 
 CREATE TABLE IF NOT EXISTS members (
@@ -26,6 +29,7 @@ CREATE TABLE IF NOT EXISTS members (
     contact TEXT,
     background TEXT,
     education TEXT CHECK(education IN ('Mufti', 'Hafiz', 'Talimuddin', 'None')),
+    user_id TEXT REFERENCES "users"(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -71,7 +75,7 @@ CREATE TABLE IF NOT EXISTS community_events (
 CREATE TABLE IF NOT EXISTS audit_logs (
     id TEXT PRIMARY KEY,
     mosque_id TEXT NOT NULL REFERENCES mosques(id),
-    "user" TEXT NOT NULL,
+    user_name TEXT NOT NULL,
     action TEXT NOT NULL,
     details TEXT NOT NULL,
     date TEXT NOT NULL,

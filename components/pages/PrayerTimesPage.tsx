@@ -1,25 +1,17 @@
-import { useState, useEffect, MouseEvent } from 'react';
+import { useState, MouseEvent } from 'react';
 import { Mosque, PrayerTime } from '../../types';
 import { Button } from '../ui';
 import { PlusIcon, EditIcon } from '../icons';
 import { DataTable, Column } from '../DataTable';
 import { PrayerTimeFormModal } from '../forms/PrayerTimeFormModal';
-import dbService from '../../database/clientService';
+import { usePrayerTimes } from '../../hooks/useData';
 
 type MouseClickEvent = MouseEvent<HTMLButtonElement>;
 
 export const PrayerTimesPage = ({ mosque }: { mosque: Mosque }) => {
-    const [times, setTimes] = useState<PrayerTime[]>([]);
+    const { prayerTimes, isLoading, mutate } = usePrayerTimes(mosque.id);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingPrayerTime, setEditingPrayerTime] = useState<PrayerTime | null>(null);
-
-    const fetchPrayerTimes = () => {
-        dbService.getCollection<'prayerTimes'>(mosque.id, 'prayerTimes').then(setTimes);
-    };
-
-    useEffect(() => {
-        fetchPrayerTimes();
-    }, [mosque]);
 
     const handleEditClick = (prayerTime: PrayerTime) => {
         setEditingPrayerTime(prayerTime);
@@ -29,6 +21,11 @@ export const PrayerTimesPage = ({ mosque }: { mosque: Mosque }) => {
     const handleAddClick = () => {
         setEditingPrayerTime(null);
         setIsEditModalOpen(true);
+    };
+    
+    const handleSave = () => {
+        mutate(); // Revalidate data after save
+        setIsEditModalOpen(false);
     };
 
     const columns: Column<PrayerTime>[] = [
@@ -48,18 +45,19 @@ export const PrayerTimesPage = ({ mosque }: { mosque: Mosque }) => {
          <div>
             <div className="flex justify-between items-center mb-4">
                 <h1 className="text-2xl font-bold">Prayer Times</h1>
-                <div className="flex gap-2">
-                    <Button variant="outline">Calculation Method</Button>
-                    <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>Add Prayer Time</Button>
-                </div>
+                <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>Add Prayer Time</Button>
             </div>
-            <DataTable columns={columns} data={times} />
+            {isLoading ? (
+                <div className="text-center py-8 text-gray-500">Loading prayer times...</div>
+            ) : (
+                <DataTable columns={columns} data={prayerTimes} />
+            )}
             <PrayerTimeFormModal 
                 isOpen={isEditModalOpen} 
                 onClose={() => setIsEditModalOpen(false)} 
                 mosqueId={mosque.id} 
                 initialData={editingPrayerTime} 
-                onSave={fetchPrayerTimes} 
+                onSave={handleSave} 
             />
         </div>
     );
