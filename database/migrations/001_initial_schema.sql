@@ -74,13 +74,3 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     date TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Down
-DROP TABLE IF EXISTS audit_logs;
-DROP TABLE IF EXISTS community_events;
-DROP TABLE IF EXISTS donations;
-DROP TABLE IF EXISTS announcements;
-DROP TABLE IF EXISTS prayer_times;
-DROP TABLE IF EXISTS members;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS mosques;

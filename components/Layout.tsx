@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mosque, User } from '../types';
-import { MosqueIcon, UsersIcon, ClockIcon, MegaphoneIcon, DollarSignIcon, CalendarIcon, FileTextIcon, ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, HomeIcon, PlusIcon } from './icons';
+import { MosqueIcon, UsersIcon, ClockIcon, MegaphoneIcon, DollarSignIcon, CalendarIcon, FileTextIcon, ChevronDownIcon, LogOutIcon, MenuIcon, XIcon, HomeIcon, PlusIcon, ExternalLinkIcon } from './icons';
 import { generateAvatarUrl } from '../lib/avatar';
 
 interface LayoutProps {
@@ -32,6 +32,24 @@ const NavItem = ({ icon: Icon, label, isActive, onClick }: { icon: React.FC<any>
 const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque, onMosqueChange, onNavigate, currentPage, onLogout, onAddMosque }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   const allNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: HomeIcon, roles: ['Admin', 'Imam', 'Muazzin'] },
@@ -108,59 +126,86 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
       {/* Main Content */}
       <div className="lg:pl-64">
         {/* Header */}
-        <header className="sticky top-0 z-10 bg-surface/80 dark:bg-dark-surface/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between p-4">
-          <button 
-              onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden text-gray-600 dark:text-gray-300 hover:text-primary"
-              aria-label="Open sidebar"
-          >
-              <MenuIcon className="h-6 w-6" />
-          </button>
-          
-          <div className="flex-1 lg:hidden"></div>
+        <header className="sticky top-0 z-10 bg-surface/80 dark:bg-dark-surface/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700/50 flex items-center justify-between p-4 transition-all duration-300">
+          <div className="flex items-center gap-4">
+            <button 
+                onClick={() => setIsSidebarOpen(true)}
+                className="lg:hidden text-gray-600 dark:text-gray-300 hover:text-primary transition-colors duration-200"
+                aria-label="Open sidebar"
+            >
+                <MenuIcon className="h-6 w-6" />
+            </button>
+            
+            {/* Landing Page Link */}
+            <button 
+                onClick={() => {
+                    if (user?.role === 'Admin') {
+                        // Admin can visit landing page in same tab
+                        window.location.href = '/';
+                    } else {
+                        // Other roles open in new tab to avoid losing session
+                        window.open('/', '_blank');
+                    }
+                }}
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
+                title="Visit Landing Page"
+            >
+                <ExternalLinkIcon className="h-4 w-4" />
+                <span>Home</span>
+            </button>
+          </div>
 
-          <div className="relative">
-            {/* Only show dropdown for Admin users (or users without role for backward compatibility) */}
+          <div className="relative" ref={dropdownRef}>
+            {/* Only show dropdown for Admin users */}
             {(!user.role || user.role === 'Admin') ? (
               <>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                  className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200"
                 >
-                  <img src={selectedMosque.logoUrl} alt={selectedMosque.name} className="h-8 w-8 rounded-md" />
-                  <div>
+                  <img src={selectedMosque.logoUrl} alt={selectedMosque.name} className="h-8 w-8 rounded-md transition-transform duration-200 hover:scale-105" />
+                  <div className="hidden sm:block text-left">
                     <h2 className="text-lg font-bold">{selectedMosque.name}</h2>
-                    <p className="text-xs text-gray-500 hidden sm:block">{selectedMosque.address}</p>
+                    <p className="text-xs text-gray-500">{selectedMosque.address}</p>
                   </div>
-                  <ChevronDownIcon className={`h-5 w-5 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDownIcon className={`h-5 w-5 transition-transform duration-300 ${dropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute mt-2 w-72 bg-surface dark:bg-dark-surface rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10 right-0">
-                    {mosques.map(mosque => (
-                      <button
-                        key={mosque.id}
-                        onClick={() => {
-                          onMosqueChange(mosque);
-                          setDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center space-x-3"
-                      >
-                        <img src={mosque.logoUrl} alt={mosque.name} className="h-8 w-8 rounded-md" />
-                        <div>
-                            <p className="font-semibold">{mosque.name}</p>
-                            <p className="text-xs text-gray-500">{mosque.address}</p>
-                        </div>
-                      </button>
-                    ))}
+                  <div className="absolute mt-2 w-72 bg-surface dark:bg-dark-surface rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 right-0 animate-in fade-in slide-in-from-top-2 duration-300 max-h-[70vh] overflow-hidden">
+                    <div className="max-h-96 overflow-y-auto">
+                      {mosques.map(mosque => (
+                        <button
+                          key={mosque.id}
+                          onClick={() => {
+                            onMosqueChange(mosque);
+                            setDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center space-x-3 transition-all duration-200 first:rounded-t-lg ${
+                            selectedMosque.id === mosque.id ? 'bg-primary/5 dark:bg-primary/10' : ''
+                          }`}
+                        >
+                          <img src={mosque.logoUrl} alt={mosque.name} className="h-8 w-8 rounded-md transition-transform duration-200 hover:scale-105" />
+                          <div className="flex-1 min-w-0">
+                              <p className="font-semibold truncate">{mosque.name}</p>
+                              <p className="text-xs text-gray-500 truncate">{mosque.address}</p>
+                          </div>
+                          {selectedMosque.id === mosque.id && (
+                            <svg className="h-5 w-5 text-primary flex-shrink-0 animate-in fade-in duration-200" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                            </svg>
+                          )}
+                        </button>
+                      ))}
+                    </div>
                     {onAddMosque && (
                       <button
                         onClick={() => {
                           onAddMosque();
                           setDropdownOpen(false);
                         }}
-                        className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center space-x-3 border-t border-gray-200 dark:border-gray-700 mt-2 pt-2"
+                        className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center space-x-3 border-t border-gray-200 dark:border-gray-700 transition-all duration-200 rounded-b-lg"
                       >
-                        <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center">
+                        <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center transition-all duration-200 hover:bg-primary/20">
                           <PlusIcon className="h-5 w-5 text-primary" />
                         </div>
                         <div>
@@ -175,15 +220,14 @@ const Layout: React.FC<LayoutProps> = ({ children, user, mosques, selectedMosque
             ) : (
               /* For Imam and Muazzin, just show their mosque name without dropdown */
               <div className="flex items-center space-x-2 p-2">
-                <img src={selectedMosque.logoUrl} alt={selectedMosque.name} className="h-8 w-8 rounded-md" />
-                <div>
+                <img src={selectedMosque.logoUrl} alt={selectedMosque.name} className="h-8 w-8 rounded-md transition-transform duration-200 hover:scale-105" />
+                <div className="hidden sm:block">
                   <h2 className="text-lg font-bold">{selectedMosque.name}</h2>
-                  <p className="text-xs text-gray-500 hidden sm:block">{selectedMosque.address}</p>
+                  <p className="text-xs text-gray-500">{selectedMosque.address}</p>
                 </div>
               </div>
             )}
           </div>
-           <div className="flex-1 lg:hidden"></div>
         </header>
 
         {/* Page Content */}

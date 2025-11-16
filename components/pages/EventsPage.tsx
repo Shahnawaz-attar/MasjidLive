@@ -1,10 +1,12 @@
-import { useState, useEffect, MouseEvent } from 'react';
+import { useState, MouseEvent } from 'react';
 import { Mosque, CommunityEvent } from '../../types';
-import { Button, Skeleton, TableSkeleton } from '../ui';
+import { Button } from '../ui';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { DataTable, Column } from '../DataTable';
 import { EventFormModal } from '../forms/EventFormModal';
+import { ConfirmationModal } from '../ConfirmationModal';
 import { useEvents } from '../../hooks/useData';
+import { TableSkeleton } from '../Skeleton';
 import dbService from '../../database/clientService';
 
 type MouseClickEvent = MouseEvent<HTMLButtonElement>;
@@ -33,6 +35,15 @@ export const EventsPage = ({ mosque }: { mosque: Mosque }) => {
     const { events, isLoading, isError, mutate } = useEvents(mosque.id);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingEvent, setEditingEvent] = useState<CommunityEvent | null>(null);
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{
+        isOpen: boolean;
+        eventId: string | null;
+        eventTitle: string;
+    }>({
+        isOpen: false,
+        eventId: null,
+        eventTitle: '',
+    });
 
     // Filter events: show active events + expired events within 1 week
     const visibleEvents = events?.filter(event => 
@@ -49,11 +60,32 @@ export const EventsPage = ({ mosque }: { mosque: Mosque }) => {
         setIsModalOpen(true);
     };
 
-    const handleDeleteClick = async (eventId: string) => {
-        if (window.confirm("Are you sure you want to delete this event?")) {
-            await dbService.deleteDoc('events', eventId);
+    const handleDeleteClick = (event: CommunityEvent) => {
+        setDeleteConfirmation({
+            isOpen: true,
+            eventId: event.id,
+            eventTitle: event.title,
+        });
+    };
+
+    const confirmDelete = async () => {
+        if (deleteConfirmation.eventId) {
+            await dbService.deleteDoc('events', deleteConfirmation.eventId);
             mutate();
         }
+        setDeleteConfirmation({
+            isOpen: false,
+            eventId: null,
+            eventTitle: '',
+        });
+    };
+
+    const cancelDelete = () => {
+        setDeleteConfirmation({
+            isOpen: false,
+            eventId: null,
+            eventTitle: '',
+        });
     };
 
     const columns: Column<CommunityEvent>[] = [
@@ -69,6 +101,22 @@ export const EventsPage = ({ mosque }: { mosque: Mosque }) => {
                     )}
                 </div>
             )
+        },
+        { 
+            header: 'Description', 
+            accessor: item => (
+                <div className="max-w-xs truncate text-sm text-gray-600 dark:text-gray-400">
+                    {item.description || '-'}
+                </div>
+            )
+        },
+        { 
+            header: 'Start Date', 
+            accessor: item => new Date(item.startDate || item.date).toLocaleDateString()
+        },
+        { 
+            header: 'End Date', 
+            accessor: item => item.endDate ? new Date(item.endDate).toLocaleDateString() : '-'
         },
         { 
             header: 'Date', 
@@ -91,7 +139,7 @@ export const EventsPage = ({ mosque }: { mosque: Mosque }) => {
                     <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditClick(item))}>
                         <EditIcon className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item.id))}>
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item))}>
                         <TrashIcon className="h-4 w-4 text-red-500" />
                     </Button>
                 </div>
@@ -107,7 +155,7 @@ export const EventsPage = ({ mosque }: { mosque: Mosque }) => {
             </div>
             
             {isLoading ? (
-                <TableSkeleton rows={5} columns={5} />
+                <TableSkeleton rows={5} columns={7} />
             ) : isError ? (
                 <div className="text-red-500 p-4 border border-red-300 rounded bg-red-50">
                     Error loading events. Please try again.
@@ -122,6 +170,16 @@ export const EventsPage = ({ mosque }: { mosque: Mosque }) => {
                 mosqueId={mosque.id}
                 initialData={editingEvent}
                 onSave={() => mutate()}
+            />
+
+            <ConfirmationModal
+                isOpen={deleteConfirmation.isOpen}
+                onClose={cancelDelete}
+                onConfirm={confirmDelete}
+                title="Delete Event"
+                description={`Are you sure you want to delete "${deleteConfirmation.eventTitle}"? This action cannot be undone.`}
+                confirmText="Delete Event"
+                cancelText="Cancel"
             />
         </div>
     );

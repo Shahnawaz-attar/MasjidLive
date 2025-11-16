@@ -65,14 +65,14 @@ export default {
         return apiCall('/mosques');
     },
 
-    createMosque: async (data: Omit<Mosque, 'id' | 'logoUrl'>): Promise<Mosque> => {
+    createMosque: async (data: Omit<Mosque, 'id'>): Promise<Mosque> => {
         return apiCall('/mosques', {
             method: 'POST',
             body: JSON.stringify(data),
         });
     },
 
-    updateMosque: async (id: string, data: Partial<Omit<Mosque, 'id' | 'logoUrl'>>): Promise<Mosque> => {
+    updateMosque: async (id: string, data: Partial<Omit<Mosque, 'id'>>): Promise<Mosque> => {
         return apiCall(`/mosques/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data),

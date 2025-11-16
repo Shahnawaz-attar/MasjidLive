@@ -4,8 +4,10 @@ import { Button } from '../ui';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { DataTable, Column } from '../DataTable';
 import { AnnouncementFormModal } from '../forms/AnnouncementFormModal';
+import { ConfirmationModal } from '../ConfirmationModal';
 import dbService from '../../database/clientService';
 import { useAnnouncements } from '../../hooks/useData';
+import { TableSkeleton } from '../Skeleton';
 
 type MouseClickEvent = MouseEvent<HTMLButtonElement>;
 
@@ -18,6 +20,15 @@ export const AnnouncementsPage = ({ mosque }: { mosque: Mosque }) => {
     const { announcements, isLoading, mutate } = useAnnouncements(mosque.id);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{
+        isOpen: boolean;
+        announcementId: string | null;
+        announcementTitle: string;
+    }>({
+        isOpen: false,
+        announcementId: null,
+        announcementTitle: '',
+    });
 
     const handleAddClick = () => {
         setEditingAnnouncement(null);
@@ -29,13 +40,34 @@ export const AnnouncementsPage = ({ mosque }: { mosque: Mosque }) => {
         setIsModalOpen(true);
     };
 
-    const handleDeleteClick = async (announcementId: string) => {
-        if (window.confirm("Are you sure you want to delete this announcement?")) {
-            await dbService.deleteDoc('announcements', announcementId);
+    const handleDeleteClick = (announcement: Announcement) => {
+        setDeleteConfirmation({
+            isOpen: true,
+            announcementId: announcement.id,
+            announcementTitle: announcement.title,
+        });
+    };
+
+    const confirmDelete = async () => {
+        if (deleteConfirmation.announcementId) {
+            await dbService.deleteDoc('announcements', deleteConfirmation.announcementId);
             mutate(); // Revalidate data
         }
+        setDeleteConfirmation({
+            isOpen: false,
+            announcementId: null,
+            announcementTitle: '',
+        });
     };
-    
+
+    const cancelDelete = () => {
+        setDeleteConfirmation({
+            isOpen: false,
+            announcementId: null,
+            announcementTitle: '',
+        });
+    };
+
     const handleSave = () => {
         mutate(); // Revalidate data after save
         setIsModalOpen(false);
@@ -52,7 +84,7 @@ export const AnnouncementsPage = ({ mosque }: { mosque: Mosque }) => {
                     <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditClick(item))}>
                         <EditIcon className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item.id))}>
+                    <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item))}>
                         <TrashIcon className="h-4 w-4 text-red-500" />
                     </Button>
                 </div>
@@ -67,7 +99,7 @@ export const AnnouncementsPage = ({ mosque }: { mosque: Mosque }) => {
                 <Button onClick={handleAddClick}><PlusIcon className="h-4 w-4 mr-2"/>New Announcement</Button>
             </div>
             {isLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading announcements...</div>
+                <TableSkeleton rows={5} columns={4} />
             ) : (
                 <DataTable columns={columns} data={announcements} />
             )}
@@ -77,6 +109,15 @@ export const AnnouncementsPage = ({ mosque }: { mosque: Mosque }) => {
                 mosqueId={mosque.id}
                 initialData={editingAnnouncement}
                 onSave={handleSave}
+            />
+            <ConfirmationModal
+                isOpen={deleteConfirmation.isOpen}
+                onClose={cancelDelete}
+                onConfirm={confirmDelete}
+                title="Delete Announcement"
+                description={`Are you sure you want to delete "${deleteConfirmation.announcementTitle}"? This action cannot be undone.`}
+                confirmText="Delete Announcement"
+                cancelText="Cancel"
             />
         </div>
     );

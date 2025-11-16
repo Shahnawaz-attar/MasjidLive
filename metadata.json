@@ -1,5 +1,5 @@
 {
-  "name": "Masjid Manager",
+  "name": "City Masjid",
   "description": "A clean, minimal, and Google-styled Admin-first web app for mosque management, inspired by Google Drive and Google Calendar UI. It allows admins to manage mosques, members, prayer timings, announcements, donations, and community events.",
   "requestFramePermissions": []
 }

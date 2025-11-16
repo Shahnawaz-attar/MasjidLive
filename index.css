@@ -1,0 +1,256 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 97%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 98%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 98%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 94%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 94%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214.3 31.8% 88%;
+    --input: 214.3 31.8% 88%;
+    --ring: 142 71% 45%;
+    --radius: 0.5rem;
+
+    /* Layout-specific variables */
+    --surface: 0 0% 100%;
+    --dark-background: 222.2 84% 4.9%;
+    --dark-surface: 217.2 32.6% 17.5%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 142 71% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 142 71% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 142 71% 45%;
+
+    /* Dark mode overrides */
+    --surface: 217.2 32.6% 17.5%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* Smooth scrolling for the entire page */
+    scroll-behavior: smooth;
+  }
+
+  /* Force date picker icon to be visible */
+  input[type="date"] {
+    position: relative;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 1 !important;
+    display: block !important;
+    background: transparent !important;
+    color: hsl(var(--muted-foreground)) !important;
+    cursor: pointer !important;
+    border: none !important;
+    outline: none !important;
+    width: 20px !important;
+    height: 20px !important;
+    margin-left: auto !important;
+    margin-right: 8px !important;
+  }
+
+  /* Firefox date picker styling */
+  input[type="date"]::-moz-calendar-picker-indicator {
+    opacity: 1 !important;
+    display: block !important;
+    background: transparent !important;
+    color: hsl(var(--muted-foreground)) !important;
+    cursor: pointer !important;
+    border: none !important;
+    outline: none !important;
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Custom scrollbar for better UX */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.3);
+    border-radius: 3px;
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.5);
+  }
+}
+
+@layer components {
+  /* Enhanced button animations */
+  .btn-animated {
+    @apply transition-all duration-200 ease-out transform hover:scale-105 active:scale-95;
+  }
+
+  /* Card hover animations */
+  .card-hover {
+    @apply transition-all duration-300 ease-out hover:shadow-lg hover:-translate-y-1;
+  }
+
+  /* Smooth focus animations */
+  .focus-smooth {
+    @apply transition-all duration-200 focus:ring-2 focus:ring-primary/50 focus:ring-offset-2;
+  }
+
+  /* Loading spinner */
+  .loading-spinner {
+    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary;
+  }
+
+  /* Slide in animations */
+  .slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+
+  .slide-in-left {
+    animation: slideInLeft 0.3s ease-out;
+  }
+
+  .slide-in-bottom {
+    animation: slideInBottom 0.3s ease-out;
+  }
+
+  /* Fade in with scale */
+  .fade-scale-in {
+    animation: fadeScaleIn 0.4s ease-out;
+  }
+
+  /* Pulse glow effect */
+  .pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+}
+
+@layer utilities {
+  /* Enhanced transitions for interactive elements */
+  .interactive {
+    @apply transition-all duration-200 ease-out hover:scale-105 active:scale-95 cursor-pointer;
+  }
+
+  .interactive-soft {
+    @apply transition-all duration-300 ease-out hover:shadow-md cursor-pointer;
+  }
+
+  /* Glass morphism effects */
+  .glass {
+    @apply backdrop-blur-md bg-white/70 dark:bg-gray-900/70 border border-white/20;
+  }
+
+  .glass-strong {
+    @apply backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 border border-white/30;
+  }
+}
+
+/* Keyframe animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeScaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px hsl(var(--primary) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.8);
+  }
+}
+
+/* Page transition animations */
+.page-enter {
+  animation: pageEnter 0.4s ease-out;
+}
+
+@keyframes pageEnter {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

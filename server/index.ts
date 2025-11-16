@@ -108,6 +108,17 @@ app.delete('/api/mosques/:id', async (req: Request, res: Response) => {
     }
 });
 
+// Get mosque summary - MUST come before the /:collection route
+app.get('/api/mosques/:mosqueId/summary', async (req: Request, res: Response) => {
+    try {
+        const { mosqueId } = req.params;
+        const summary = await pgService.getMosqueSummary(mosqueId);
+        res.json(summary);
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get collection
 app.get('/api/mosques/:mosqueId/:collection', async (req: Request, res: Response) => {
     try {
@@ -147,17 +158,6 @@ app.delete('/api/:collection/:docId', async (req: Request, res: Response) => {
         const { collection, docId } = req.params;
         await pgService.deleteDoc(collection as any, docId);
         res.json({ success: true });
-    } catch (error: any) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Get mosque summary
-app.get('/api/mosques/:mosqueId/summary', async (req: Request, res: Response) => {
-    try {
-        const { mosqueId } = req.params;
-        const summary = await pgService.getMosqueSummary(mosqueId);
-        res.json(summary);
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }

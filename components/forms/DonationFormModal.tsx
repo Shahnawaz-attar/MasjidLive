@@ -1,8 +1,9 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Donation } from '../../types';
-import { Modal, Button, Input, Label } from '../ui';
-import { InputChangeEvent, SelectChangeEvent, TextareaChangeEvent } from '../utils/formHelpers';
+import { Modal, Button, Input, Label, Textarea, DatePicker } from '../ui';
+import { InputChangeEvent } from '../utils/formHelpers';
 import dbService from '../../database/clientService';
+import { toast } from 'sonner';
 
 interface DonationFormModalProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ export const DonationFormModal = ({ isOpen, onClose, mosqueId, initialData, onSa
         date: initialData?.date || new Date().toISOString().split('T')[0],
     });
     const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (initialData) {
@@ -40,7 +42,7 @@ export const DonationFormModal = ({ isOpen, onClose, mosqueId, initialData, onSa
         setError('');
     }, [initialData, isOpen]);
 
-    const handleChange = (e: InputChangeEvent | SelectChangeEvent | TextareaChangeEvent) => {
+    const handleChange = (e: InputChangeEvent | { target: { id: string; value: string } }) => {
         const { id, value } = e.target;
         setFormData(prev => ({ ...prev, [id]: id === 'amount' ? parseFloat(value) || 0 : value }));
     };
@@ -48,17 +50,24 @@ export const DonationFormModal = ({ isOpen, onClose, mosqueId, initialData, onSa
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
+        setIsSubmitting(true);
 
         try {
             if (initialData) {
                 await dbService.updateDoc('donations', { ...initialData, ...formData, mosqueId });
+                toast.success('Donation updated successfully');
             } else {
                 await dbService.addDoc(mosqueId, 'donations', formData);
+                toast.success('Donation recorded successfully');
             }
             onSave();
             onClose();
         } catch (err: any) {
-            setError('Failed to save donation. Please try again.');
+            const errorMessage = 'Failed to save donation. Please try again.';
+            setError(errorMessage);
+            toast.error(errorMessage);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -83,7 +92,12 @@ export const DonationFormModal = ({ isOpen, onClose, mosqueId, initialData, onSa
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="date">Date *</Label>
-                        <Input id="date" type="date" value={formData.date} onChange={handleChange} required />
+                        <DatePicker 
+                            id="date" 
+                            value={formData.date} 
+                            onChange={handleChange} 
+                            placeholder="Select date"
+                        />
                     </div>
                 </div>
 
@@ -93,8 +107,15 @@ export const DonationFormModal = ({ isOpen, onClose, mosqueId, initialData, onSa
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button type="submit">{initialData ? 'Save Changes' : 'Add Donation'}</Button>
+                    <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting 
+                            ? 'Saving...' 
+                            : initialData ? 'Save Changes' : 'Add Donation'
+                        }
+                    </Button>
                 </div>
             </form>
         </Modal>

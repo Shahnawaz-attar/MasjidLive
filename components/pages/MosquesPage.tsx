@@ -4,7 +4,9 @@ import { Button } from '../ui';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { DataTable, Column } from '../DataTable';
 import { MosqueFormModal } from '../forms/MosqueFormModal';
+import { ConfirmationModal } from '../ConfirmationModal';
 import dbService from '../../database/clientService';
+import { toast } from 'sonner';
 
 type MouseClickEvent = MouseEvent<HTMLButtonElement>;
 
@@ -21,7 +23,16 @@ export const MosquesPage = ({ mosques, onMosqueChange, onRefresh, userRole }: {
 }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingMosque, setEditingMosque] = useState<Mosque | null>(null);
-    
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{
+        isOpen: boolean;
+        mosqueId: string | null;
+        mosqueName: string;
+    }>({
+        isOpen: false,
+        mosqueId: null,
+        mosqueName: '',
+    });
+
     const isReadOnly = userRole === 'Imam'; // Imam can only view mosques
     const handleAddClick = () => {
         setEditingMosque(null);
@@ -33,15 +44,38 @@ export const MosquesPage = ({ mosques, onMosqueChange, onRefresh, userRole }: {
         setIsModalOpen(true);
     };
 
-    const handleDeleteClick = async (mosqueId: string) => {
-        if (window.confirm("Are you sure you want to delete this mosque? This will also delete all associated data (members, prayer times, events, etc.).")) {
+    const handleDeleteClick = (mosque: Mosque) => {
+        setDeleteConfirmation({
+            isOpen: true,
+            mosqueId: mosque.id,
+            mosqueName: mosque.name,
+        });
+    };
+
+    const confirmDelete = async () => {
+        if (deleteConfirmation.mosqueId) {
             try {
-                await dbService.deleteMosque(mosqueId);
+                await dbService.deleteMosque(deleteConfirmation.mosqueId);
+                toast.success(`${deleteConfirmation.mosqueName} deleted successfully`);
                 onRefresh();
             } catch (err: any) {
-                alert('Failed to delete mosque: ' + (err.message || 'Unknown error'));
+                console.error('Error deleting mosque:', err);
+                toast.error(`Failed to delete mosque: ${err.message || 'Unknown error'}`);
             }
         }
+        setDeleteConfirmation({
+            isOpen: false,
+            mosqueId: null,
+            mosqueName: '',
+        });
+    };
+
+    const cancelDelete = () => {
+        setDeleteConfirmation({
+            isOpen: false,
+            mosqueId: null,
+            mosqueName: '',
+        });
     };
 
     const handleSave = (mosque: Mosque) => {
@@ -73,7 +107,7 @@ export const MosquesPage = ({ mosques, onMosqueChange, onRefresh, userRole }: {
                             <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleEditClick(item))}>
                                 <EditIcon className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item.id))}>
+                            <Button variant="ghost" size="icon" className="hover:bg-transparent" onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteClick(item))}>
                                 <TrashIcon className="h-4 w-4 text-red-500" />
                             </Button>
                         </>
@@ -106,6 +140,15 @@ export const MosquesPage = ({ mosques, onMosqueChange, onRefresh, userRole }: {
                     initialData={editingMosque}
                 />
             )}
+            <ConfirmationModal
+                isOpen={deleteConfirmation.isOpen}
+                onClose={cancelDelete}
+                onConfirm={confirmDelete}
+                title="Delete Mosque"
+                description={`Are you sure you want to delete "${deleteConfirmation.mosqueName}"? This will also delete all associated data (members, prayer times, events, etc.). This action cannot be undone.`}
+                confirmText="Delete Mosque"
+                cancelText="Cancel"
+            />
         </div>
     );
 };

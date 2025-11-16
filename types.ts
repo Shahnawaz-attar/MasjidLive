@@ -57,12 +57,14 @@ export interface CommunityEvent {
   id: string;
   mosqueId: string;
   title: string;
-  date: string; // Should be in a format that can be parsed by a calendar
+  description?: string;
+  startDate: string;
+  endDate: string; // Now required (removed optional ?)
+  date: string; // Keep for backward compatibility
   type: 'Event' | 'Iftari Slot';
   capacity?: number;
   booked?: number;
 }
-
 
 export interface AuditLog {
     id: string;
@@ -78,6 +80,16 @@ export interface Mosque {
     name: string;
     address: string;
     logoUrl: string;
+    // Optional detailed fields
+    description?: string;
+    phone?: string;
+    email?: string;
+    website?: string;
+    capacity?: number;
+    imamName?: string;
+    imamPhone?: string;
+    facilities?: string;
+    established?: string;
 }
 
 export interface MosqueSummary {

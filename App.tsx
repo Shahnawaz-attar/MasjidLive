@@ -4,6 +4,7 @@ import { Mosque, User, PrayerTime, UserWithoutPassword } from './types';
 import dbService from './database/clientService';
 import { MosqueFormModal } from './components/forms';
 import { useMosques } from './hooks/useData';
+import { Toaster } from './components/ui';
 import {
     DashboardPage,
     MembersPage,
@@ -58,7 +59,13 @@ function App() {
     // Auto-select mosque when mosques load or user changes
     useEffect(() => {
         if (mosques.length > 0 && !selectedMosque) {
-            // If user has a mosque_id (Imam or Muazzin), set their mosque
+            // Admin should not be tied to any specific mosque - they can manage all
+            if (user && user.role === 'Admin') {
+                setSelectedMosque(mosques[0]); // Default to first mosque for display
+                return;
+            }
+            
+            // If user has a mosque_id (Imam or Muazzin), set their specific mosque
             if (user && user.mosque_id) {
                 const userMosque = mosques.find(m => m.id === user.mosque_id);
                 if (userMosque) {
@@ -66,10 +73,12 @@ function App() {
                     return;
                 }
             }
-            // Otherwise set first mosque (for Admin or if mosque not found)
+            
+            // Fallback to first mosque
             setSelectedMosque(mosques[0]);
         }
     }, [mosques, user, selectedMosque]);
+
     const handleAddMosque = () => {
         setIsMosqueModalOpen(true);
     };
@@ -101,12 +110,19 @@ function App() {
         setUser(asUser);
         try { localStorage.setItem('masjid_user', JSON.stringify(asUser)); } catch {}
         
-        // If user has a mosque_id (Imam or Muazzin), set their mosque automatically
-        if (asUser.mosque_id) {
+        // Only set specific mosque for non-admin users
+        if (asUser.mosque_id && asUser.role !== 'Admin') {
             const userMosque = mosques.find(m => m.id === asUser.mosque_id);
             if (userMosque) {
                 setSelectedMosque(userMosque);
             }
+        }
+        
+        // Set proper initial view based on user type
+        if (asUser.role === 'Admin') {
+            setView('dashboard'); // Admin goes to dashboard, can manage all mosques
+        } else {
+            setView('dashboard'); // Other roles go to dashboard for their assigned mosque
         }
         
         setCurrentPage('dashboard');
@@ -116,6 +132,7 @@ function App() {
         setUser(null);
         setView('landing');
         setSelectedMosque(null);
+        setCurrentPage('dashboard');
         try { localStorage.removeItem('masjid_user'); } catch {}
     };
 
@@ -172,15 +189,17 @@ function App() {
         }
         return <LandingPage mosques={mosques} onGoToLogin={() => setView('login')} />;
     }
-    
-    if (currentPage !== 'mosques' && !selectedMosque) {
+
+    // Admin can access all pages without needing a selected mosque
+    const isAdmin = user.role === 'Admin';
+    if (!isAdmin && currentPage !== 'mosques' && !selectedMosque) {
         return <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-background text-lg font-semibold text-gray-700 dark:text-gray-300">Loading mosques...</div>
     }
 
     const layoutMosque = selectedMosque || (mosques.length > 0 ? mosques[0] : null);
     
-    if (!layoutMosque && currentPage !== 'mosques') {
-        return <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-background text-lg font-semibold text-gray-700 dark:text-gray-300">No mosques available. Please create a mosque first.</div>
+    if (!isAdmin && !layoutMosque && currentPage !== 'mosques') {
+        return <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-background text-lg font-semibold text-gray-700 dark:text-gray-300">No mosques available. Please contact administrator.</div>
     }
 
     return (
@@ -202,6 +221,7 @@ function App() {
                 onClose={() => setIsMosqueModalOpen(false)}
                 onSave={handleMosqueCreated}
             />
+            <Toaster />
         </>
     );
 }

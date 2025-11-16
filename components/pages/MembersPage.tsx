@@ -4,8 +4,10 @@ import { Button } from '../ui';
 import { PlusIcon, EditIcon, TrashIcon } from '../icons';
 import { DataTable, Column } from '../DataTable';
 import { MemberFormModal } from '../forms/MemberFormModal';
+import { ConfirmationModal } from '../ConfirmationModal';
 import dbService from '../../database/clientService';
 import { useMembers } from '../../hooks/useData';
+import { TableSkeleton } from '../Skeleton';
 
 type MouseClickEvent = MouseEvent<HTMLButtonElement>;
 
@@ -18,9 +20,18 @@ export const MembersPage = ({ mosque, userRole }: { mosque: Mosque; userRole: st
     const { members, isLoading, mutate } = useMembers(mosque.id);
     const [isMemberModalOpen, setIsMemberModalOpen] = useState(false);
     const [editingMember, setEditingMember] = useState<Member | null>(null);
-    
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{
+        isOpen: boolean;
+        memberId: string | null;
+        memberName: string;
+    }>({
+        isOpen: false,
+        memberId: null,
+        memberName: '',
+    });
+
     const isReadOnly = userRole === 'Muazzin'; // Muazzin can only view members
-    
+
     // Check if a member is a system user (linked to users table)
     const isSystemUser = (member: Member) => !!member.userId;
 
@@ -38,17 +49,38 @@ export const MembersPage = ({ mosque, userRole }: { mosque: Mosque; userRole: st
         setIsMemberModalOpen(true);
     };
 
-    const handleDeleteMember = async (memberId: string, member: Member) => {
+    const handleDeleteMember = (member: Member) => {
         if (isSystemUser(member)) {
             alert('This member is a system user and cannot be deleted. System users (Imam, Muazzin, Admin) must be managed separately.');
             return;
         }
-        if (window.confirm("Are you sure you want to delete this member?")) {
-            await dbService.deleteDoc('members', memberId);
+        setDeleteConfirmation({
+            isOpen: true,
+            memberId: member.id,
+            memberName: member.name,
+        });
+    };
+
+    const confirmDelete = async () => {
+        if (deleteConfirmation.memberId) {
+            await dbService.deleteDoc('members', deleteConfirmation.memberId);
             mutate(); // Revalidate data after deletion
         }
+        setDeleteConfirmation({
+            isOpen: false,
+            memberId: null,
+            memberName: '',
+        });
     };
-    
+
+    const cancelDelete = () => {
+        setDeleteConfirmation({
+            isOpen: false,
+            memberId: null,
+            memberName: '',
+        });
+    };
+
     const handleSave = () => {
         mutate(); // Revalidate data after save
         setIsMemberModalOpen(false);
@@ -89,7 +121,7 @@ export const MembersPage = ({ mosque, userRole }: { mosque: Mosque; userRole: st
                         <Button 
                             variant="ghost" 
                             size="icon" 
-                            onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteMember(item.id, item))}
+                            onClick={(e: MouseClickEvent) => handleClick(e, () => handleDeleteMember(item))}
                             disabled={isLinkedUser}
                             title={isLinkedUser ? 'System users cannot be deleted' : 'Delete member'}
                         >
@@ -120,7 +152,7 @@ export const MembersPage = ({ mosque, userRole }: { mosque: Mosque; userRole: st
                 </div>
             )}
             {isLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading members...</div>
+                <TableSkeleton rows={5} columns={isReadOnly ? 3 : 4} />
             ) : (
                 <DataTable columns={columns} data={members} />
             )}
@@ -133,6 +165,15 @@ export const MembersPage = ({ mosque, userRole }: { mosque: Mosque; userRole: st
                     onSave={handleSave} 
                 />
             )}
+            <ConfirmationModal
+                isOpen={deleteConfirmation.isOpen}
+                onClose={cancelDelete}
+                onConfirm={confirmDelete}
+                title="Delete Member"
+                description={`Are you sure you want to delete "${deleteConfirmation.memberName}"? This action cannot be undone.`}
+                confirmText="Delete Member"
+                cancelText="Cancel"
+            />
         </div>
     );
 };

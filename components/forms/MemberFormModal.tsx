@@ -4,6 +4,7 @@ import { Modal, Button, Input, Label, Textarea } from '../ui';
 import { handleFormChange, InputChangeEvent, SelectChangeEvent, TextareaChangeEvent } from '../utils/formHelpers';
 import dbService from '../../database/clientService';
 import { generateAvatarUrl, isValidImageFile, fileToBase64 } from '../../lib/avatar';
+import { toast } from 'sonner';
 
 interface MemberFormModalProps {
     isOpen: boolean;
@@ -25,6 +26,7 @@ export const MemberFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string>(initialData?.photo || '');
     const [error, setError] = useState<string>('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (initialData) {
@@ -70,6 +72,9 @@ export const MemberFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave
         e.preventDefault();
         setError('');
 
+        if (isSubmitting) return; // Prevent double submission
+        setIsSubmitting(true);
+
         try {
             let photoUrl = formData.photo;
 
@@ -79,15 +84,24 @@ export const MemberFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave
                 photoUrl = generateAvatarUrl(formData.name);
             }
 
+            // Remove education field before saving since it doesn't exist in the database
+            const { education, ...dataToSave } = formData;
+
             if (initialData) {
-                await dbService.updateDoc('members', { ...initialData, ...formData, photo: photoUrl, mosqueId });
+                await dbService.updateDoc('members', { ...initialData, ...dataToSave, photo: photoUrl, mosqueId });
+                toast.success('Member updated successfully');
             } else {
-                await dbService.addDoc(mosqueId, 'members', { ...formData, photo: photoUrl });
+                await dbService.addDoc(mosqueId, 'members', { ...dataToSave, photo: photoUrl });
+                toast.success('Member added successfully');
             }
             onSave();
             onClose();
-        } catch (err) {
-            setError('Failed to save member. Please try again.');
+        } catch (err: any) {
+            const errorMessage = 'Failed to save member. Please try again.';
+            setError(errorMessage);
+            toast.error(errorMessage);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -185,11 +199,14 @@ export const MemberFormModal = ({ isOpen, onClose, mosqueId, initialData, onSave
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={onClose}>
+                    <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
                         Cancel
                     </Button>
-                    <Button type="submit">
-                        {initialData ? 'Save Changes' : 'Add Member'}
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting 
+                            ? 'Saving...' 
+                            : initialData ? 'Save Changes' : 'Add Member'
+                        }
                     </Button>
                 </div>
             </form>

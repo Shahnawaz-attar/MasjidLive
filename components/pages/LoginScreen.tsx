@@ -13,6 +13,7 @@ export const LoginScreen = ({ onLoginSuccess, onBackToLanding, onGoToRegister }:
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleEmailChange = (e: InputChangeEvent) => setEmail(e.target.value);
     const handlePasswordChange = (e: InputChangeEvent) => setPassword(e.target.value);
@@ -20,11 +21,21 @@ export const LoginScreen = ({ onLoginSuccess, onBackToLanding, onGoToRegister }:
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
-        const user = await dbService.login(email, password);
-        if (user) {
-            onLoginSuccess(user);
-        } else {
-            setError('Invalid email or password.');
+        
+        if (isLoading) return; // Prevent double submission
+        setIsLoading(true);
+
+        try {
+            const user = await dbService.login(email, password);
+            if (user) {
+                onLoginSuccess(user);
+            } else {
+                setError('Invalid email or password.');
+            }
+        } catch (err) {
+            setError('Login failed. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -33,7 +44,7 @@ export const LoginScreen = ({ onLoginSuccess, onBackToLanding, onGoToRegister }:
             <div className="w-full max-w-sm">
                 <div className="text-center mb-6">
                     <MosqueIcon className="h-12 w-12 text-primary mx-auto"/>
-                    <h1 className="text-3xl font-bold mt-2">Masjid Manager</h1>
+                    <h1 className="text-3xl font-bold mt-2">City Masjid</h1>
                 </div>
                 <Card>
                     <CardHeader>
@@ -44,21 +55,46 @@ export const LoginScreen = ({ onLoginSuccess, onBackToLanding, onGoToRegister }:
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="email">Email or Username</Label>
-                                <Input id="email" type="text" placeholder="admin or admin@masjid.com" required value={email} onChange={handleEmailChange} />
+                                <Input 
+                                    id="email" 
+                                    type="text" 
+                                    placeholder="admin or admin@masjid.com" 
+                                    required 
+                                    value={email} 
+                                    onChange={handleEmailChange}
+                                    disabled={isLoading}
+                                />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="password">Password</Label>
-                                <Input id="password" type="password" required value={password} onChange={handlePasswordChange} placeholder="password123"/>
+                                <Input 
+                                    id="password" 
+                                    type="password" 
+                                    required 
+                                    value={password} 
+                                    onChange={handlePasswordChange} 
+                                    placeholder="password123"
+                                    disabled={isLoading}
+                                />
                             </div>
                             {error && <p className="text-sm text-red-500">{error}</p>}
-                            <Button type="submit" className="w-full">Login</Button>
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                                {isLoading ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="loading-spinner w-4 h-4"></div>
+                                        <span>Logging in...</span>
+                                    </div>
+                                ) : (
+                                    'Login'
+                                )}
+                            </Button>
                         </form>
                     </CardContent>
                 </Card>
                 <div className="text-center mt-4">
-                    <Button variant="link" onClick={onBackToLanding}>Back to Public View</Button>
+                    <Button variant="link" onClick={onBackToLanding} disabled={isLoading}>Back to Public View</Button>
                     <span className="mx-2 text-gray-400">|</span>
-                    <Button variant="link" onClick={onGoToRegister}>Register</Button>
+                    <Button variant="link" onClick={onGoToRegister} disabled={isLoading}>Register</Button>
                 </div>
             </div>
         </div>

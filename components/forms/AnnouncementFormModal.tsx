@@ -1,8 +1,9 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { Announcement } from '../../types';
-import { Modal, Button, Input, Label, Textarea } from '../ui';
-import { handleFormChange, InputChangeEvent, SelectChangeEvent, TextareaChangeEvent } from '../utils/formHelpers';
+import { Modal, Button, Input, Label, Textarea, DatePicker } from '../ui';
+import { InputChangeEvent, SelectChangeEvent, TextareaChangeEvent } from '../utils/formHelpers';
 import dbService from '../../database/clientService';
+import { toast } from 'sonner';
 
 interface AnnouncementFormModalProps {
     isOpen: boolean;
@@ -20,6 +21,7 @@ export const AnnouncementFormModal = ({ isOpen, onClose, mosqueId, initialData, 
         date: initialData?.date || new Date().toISOString().split('T')[0],
     });
     const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (initialData) {
@@ -40,24 +42,32 @@ export const AnnouncementFormModal = ({ isOpen, onClose, mosqueId, initialData, 
         setError('');
     }, [initialData, isOpen]);
 
-    const handleChange = (e: InputChangeEvent | SelectChangeEvent | TextareaChangeEvent) => {
-        handleFormChange(setFormData, e);
+    const handleChange = (e: InputChangeEvent | SelectChangeEvent | TextareaChangeEvent | { target: { id: string; value: string } }) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({ ...prev, [id]: value }));
     };
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
+        setIsSubmitting(true);
 
         try {
             if (initialData) {
                 await dbService.updateDoc('announcements', { ...initialData, ...formData, mosqueId });
+                toast.success('Announcement updated successfully');
             } else {
                 await dbService.addDoc(mosqueId, 'announcements', formData);
+                toast.success('Announcement created successfully');
             }
             onSave();
             onClose();
         } catch (err: any) {
-            setError('Failed to save announcement. Please try again.');
+            const errorMessage = 'Failed to save announcement. Please try again.';
+            setError(errorMessage);
+            toast.error(errorMessage);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -96,13 +106,25 @@ export const AnnouncementFormModal = ({ isOpen, onClose, mosqueId, initialData, 
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="date">Date *</Label>
-                        <Input id="date" type="date" value={formData.date} onChange={handleChange} required />
+                        <DatePicker 
+                            id="date" 
+                            value={formData.date} 
+                            onChange={handleChange} 
+                            placeholder="Select date"
+                        />
                     </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-                    <Button type="submit">{initialData ? 'Save Changes' : 'Create Announcement'}</Button>
+                    <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+                        Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                        {isSubmitting 
+                            ? 'Saving...' 
+                            : initialData ? 'Save Changes' : 'Create Announcement'
+                        }
+                    </Button>
                 </div>
             </form>
         </Modal>

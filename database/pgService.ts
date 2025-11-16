@@ -30,7 +30,9 @@ const columnMappings: Record<string, string> = {
     mosque_id: 'mosqueId',
     password_hash: 'password_hash', // Keep as is for internal use
     donor_name: 'donorName',
-    created_at: 'createdAt'
+    created_at: 'createdAt',
+    start_date: 'startDate',
+    end_date: 'endDate'
 };
 
 // Helper to convert snake_case to camelCase
@@ -38,12 +40,18 @@ const toCamelCase = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj.map(toCamelCase);
     }
-    if (obj !== null && typeof obj === 'object') {
+    if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
         const camelObj: any = {};
         for (const key in obj) {
             // Check if there's a special mapping first
             const camelKey = columnMappings[key] || key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-            camelObj[camelKey] = toCamelCase(obj[key]);
+            const value = obj[key];
+            // Don't recursively process primitives (strings, numbers, booleans, null, undefined)
+            if (value === null || value === undefined || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                camelObj[camelKey] = value;
+            } else {
+                camelObj[camelKey] = toCamelCase(value);
+            }
         }
         return camelObj;
     }
@@ -55,7 +63,9 @@ const reverseColumnMappings: Record<string, string> = {
     logoUrl: 'logo_url',
     mosqueId: 'mosque_id',
     donorName: 'donor_name',
-    createdAt: 'created_at'
+    createdAt: 'created_at',
+    startDate: 'start_date',
+    endDate: 'end_date'
 };
 
 // Helper to convert camelCase to snake_case for database
@@ -63,12 +73,18 @@ const toSnakeCase = (obj: any): any => {
     if (Array.isArray(obj)) {
         return obj.map(toSnakeCase);
     }
-    if (obj !== null && typeof obj === 'object') {
+    if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
         const snakeObj: any = {};
         for (const key in obj) {
             // Check if there's a reverse mapping first
             const snakeKey = reverseColumnMappings[key] || key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-            snakeObj[snakeKey] = toSnakeCase(obj[key]);
+            const value = obj[key];
+            // Don't recursively process primitives (strings, numbers, booleans, null, undefined)
+            if (value === null || value === undefined || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                snakeObj[snakeKey] = value;
+            } else {
+                snakeObj[snakeKey] = toSnakeCase(value);
+            }
         }
         return snakeObj;
     }
@@ -275,9 +291,11 @@ export const pgService = {
         const table = tableMap[collection];
         const snakeData = toSnakeCase(data);
         
-        // Remove mosqueId/mosque_id from data since we're passing it separately
+        // Remove fields that shouldn't be sent or should be auto-generated
         delete snakeData.mosque_id;
         delete snakeData.mosqueId;
+        delete snakeData.created_at;
+        delete snakeData.createdAt;
         
         const columns = Object.keys(snakeData).join(', ');
         // Placeholders start from $3 because $1 is id and $2 is mosqueId
@@ -316,6 +334,13 @@ export const pgService = {
         const table = tableMap[collection];
         const { id, ...updateData } = data;
         const snakeData = toSnakeCase(updateData);
+        
+        // Remove fields that shouldn't be updated
+        delete snakeData.created_at;
+        delete snakeData.createdAt;
+        delete snakeData.mosque_id;
+        delete snakeData.mosqueId;
+        
         const setClause = Object.keys(snakeData).map((key, i) => `${key} = $${i + 1}`).join(', ');
         const values = [...Object.values(snakeData), id];
 

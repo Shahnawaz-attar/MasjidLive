@@ -86,7 +86,7 @@ export const RegistrationScreen = ({ mosques, onRegistrationSuccess, onBackToLog
             <div className="w-full max-w-md">
                 <div className="text-center mb-6">
                     <MosqueIcon className="h-12 w-12 text-primary mx-auto"/>
-                    <h1 className="text-3xl font-bold mt-2">Masjid Manager</h1>
+                    <h1 className="text-3xl font-bold mt-2">City Masjid</h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">Register as Imam or Muazzin</p>
                 </div>
                 <Card>
@@ -215,13 +215,20 @@ export const RegistrationScreen = ({ mosques, onRegistrationSuccess, onBackToLog
                             {error && <p className="text-sm text-red-500">{error}</p>}
                             
                             <Button type="submit" className="w-full" disabled={isSubmitting || mosques.length === 0}>
-                                {isSubmitting ? 'Registering...' : 'Register'}
+                                {isSubmitting ? (
+                                    <div className="flex items-center gap-2">
+                                        <div className="loading-spinner w-4 h-4"></div>
+                                        <span>Registering...</span>
+                                    </div>
+                                ) : (
+                                    'Register'
+                                )}
                             </Button>
                         </form>
                     </CardContent>
                 </Card>
                 <div className="text-center mt-4 space-x-4">
-                    <Button variant="link" onClick={onBackToLogin}>Already have an account? Login</Button>
+                    <Button variant="link" onClick={onBackToLogin} disabled={isSubmitting}>Already have an account? Login</Button>
                 </div>
             </div>
         </div>

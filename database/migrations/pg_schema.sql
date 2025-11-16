@@ -1,4 +1,4 @@
--- PostgreSQL Schema for Masjid Manager
+-- PostgreSQL Schema for City Masjid
 -- Run this script on your Neon PostgreSQL database
 
 CREATE TABLE IF NOT EXISTS mosques (
@@ -65,7 +65,10 @@ CREATE TABLE IF NOT EXISTS community_events (
     id TEXT PRIMARY KEY,
     mosque_id TEXT NOT NULL REFERENCES mosques(id),
     title TEXT NOT NULL,
+    description TEXT,
     date TEXT NOT NULL,
+    start_date TEXT,
+    end_date TEXT,
     type TEXT CHECK(type IN ('Event', 'Iftari Slot')),
     capacity INTEGER,
     booked INTEGER DEFAULT 0,
