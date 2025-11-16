@@ -2,7 +2,7 @@
 
 This contains everything you need to run your app locally.
 
-View your app in AI Studio: https://ai.studio/apps/drive/16-6qpoTLOVixZeytNvOyK6fiWzxLBWPu
+View your app in AI Studio: https://www.citymasjid.info/
 
 ## Features
 
