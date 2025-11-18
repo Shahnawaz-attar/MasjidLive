@@ -87,19 +87,21 @@ function App() {
         await mutateMosques(); // Revalidate mosques list
         setSelectedMosque(newMosque);
         
-        // Initialize default prayer times for the new mosque
-        const defaultPrayerTimes: Omit<PrayerTime, 'id'>[] = [
-            { name: 'Fajr', time: '05:30 AM' },
-            { name: 'Dhuhr', time: '01:30 PM' },
-            { name: 'Asr', time: '04:45 PM' },
-            { name: 'Maghrib', time: '07:15 PM' },
-            { name: 'Isha', time: '08:45 PM' }
-        ];
+        // Initialize default prayer times for the new mosque with Indian timings
+        const today = new Date().toISOString().split('T')[0];
+        const defaultPrayerTimes = {
+            date: today,
+            fajr: '05:00',      // 5:00 AM - Fajr typically around 5-5:30 AM in India
+            dhuhr: '12:30',     // 12:30 PM - Dhuhr around 12:30-1:00 PM
+            asr: '16:00',       // 4:00 PM - Asr around 4:00-4:30 PM  
+            maghrib: '18:30',   // 6:30 PM - Maghrib around 6:00-7:00 PM (varies by season)
+            isha: '20:00',      // 8:00 PM - Isha around 7:30-8:30 PM
+            jumma: '12:30',     // 12:30 PM - Jumma prayer time
+            isActive: true
+        };
 
         try {
-            for (const prayer of defaultPrayerTimes) {
-                await dbService.addDoc(newMosque.id, 'prayerTimes', prayer);
-            }
+            await dbService.addDoc(newMosque.id, 'prayerTimes', defaultPrayerTimes);
         } catch (err) {
             console.error('Error initializing prayer times:', err);
         }

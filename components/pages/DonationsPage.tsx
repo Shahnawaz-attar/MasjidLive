@@ -78,11 +78,25 @@ export const DonationsPage = ({ mosque }: { mosque: Mosque }) => {
         setIsModalOpen(false);
     };
 
+    // Helper function to get category display name
+    const getCategoryDisplayName = (category?: string, purpose?: string) => {
+        const categoryValue = category || purpose || 'general';
+        const categoryMap: { [key: string]: string } = {
+            'zakat': 'Zakat',
+            'sadaqah': 'Sadaqah', 
+            'general': 'General Fund',
+            'building': 'Building Maintenance',
+            'education': 'Education',
+            'emergency': 'Emergency Relief'
+        };
+        return categoryMap[categoryValue] || categoryValue;
+    };
+
     const columns: Column<Donation>[] = [
         { header: 'Donor', accessor: item => item.donorName },
         { header: 'Amount', accessor: item => `$${item.amount.toFixed(2)}` },
-        { header: 'Purpose', accessor: item => item.purpose },
-        { header: 'Date', accessor: item => item.date },
+        { header: 'Category', accessor: item => getCategoryDisplayName(item.category, item.purpose) },
+        { header: 'Date', accessor: item => item.donationDate || item.date || '' },
         {
             header: 'Actions',
             accessor: item => (

@@ -30,9 +30,21 @@ export interface Member {
 }
 
 export interface PrayerTime {
-  id: string; // Added for DataTable
-  name: 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
-  time: string;
+  id: string;
+  mosqueId: string;
+  date: string;
+  fajr: string;
+  dhuhr: string;
+  asr: string;
+  maghrib: string;
+  isha: string;
+  jumma?: string;
+  sunrise?: string;
+  sunset?: string;
+  isActive?: boolean;
+  // Keep old fields for backward compatibility
+  name?: 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha'; // Deprecated
+  time?: string; // Deprecated
 }
 
 export interface Announcement {
@@ -44,13 +56,18 @@ export interface Announcement {
   date: string;
 }
 
+export type DonationCategory = 'zakat' | 'sadaqah' | 'general' | 'building' | 'education' | 'emergency';
+
 export interface Donation {
     id: string;
     mosqueId: string;
     amount: number;
     donorName: string;
-    purpose: string;
-    date: string;
+    category: DonationCategory;
+    donationDate: string;
+    // Keep old fields for backward compatibility
+    purpose?: string; // Deprecated - use category instead
+    date?: string; // Deprecated - use donationDate instead
 }
 
 export interface CommunityEvent {
